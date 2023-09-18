@@ -1,0 +1,201 @@
+{
+  "name": "vscode-tcf-debug",
+  "description": "Target Communication Framework (TCF) debugger",
+  "displayName": "TCF debugger",
+  "publisher": "Intel",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/intel-innersource/applications.vpu.tools.tcf-vscode-debug"
+  },
+  "version": "0.2.2",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.79.0"
+  },
+  "categories": [
+    "Machine Learning"
+  ],
+  "keywords": [
+    "intel",
+    "neural",
+    "debugger",
+    "vscode",
+    "tcf",
+    "tcf-dap",
+    "vscode-extension"
+  ],
+  "files": [
+    "vscode-tcf-debug.vsix"
+  ],
+  "author": "ebold",
+  "contributors": [
+    {
+      "name": "ebold",
+      "email": "emilian.bold@intel.com"
+    },
+    {
+      "name": "oostoia",
+      "email": "ovidiu.ostoia@intel.com"
+    },
+    {
+      "name": "alicesto",
+      "email": "alice.stoian@intel.com"
+    }
+  ],
+  "activationEvents": [
+    "onDebugResolve:tcf",
+    "onCommand:workbench.action.tasks.runTask"
+  ],
+  "main": "./out/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Path mapper function execution may be disabled."
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "preproxy": "npm run compile",
+    "proxy": "node ./out/proxy.js",
+    "prepublishOnly": "npm run package",
+    "package": "npx vsce package -o vscode-tcf-debug.vsix --baseImagesUrl https://github.com/intel-innersource/applications.vpu.tools.tcf-vscode-debug/raw/HEAD/vscode-tcf-debug/",
+    "genschema": "npx typescript-json-schema --required ./tsconfig.json TCFLaunchRequestArguments -o src/schema/TCFLaunchRequestArguments.json && npx typescript-json-schema --required ./tsconfig.json BreakpointData -o src/tcf/schema/BreakpointData.json && npx typescript-json-schema --required ./tsconfig.json ExpressionsContextData -o src/tcf/schema/ExpressionsContextData.json && npx typescript-json-schema --required ./tsconfig.json BreakpointStatus -o src/tcf/schema/BreakpointStatus.json && npx typescript-json-schema --required ./tsconfig.json InstanceStatusData -o src/tcf/schema/InstanceStatusData.json && npx typescript-json-schema --required ./tsconfig.json TCFError -o src/tcf/schema/TCFError.json && npx typescript-json-schema --required ./tsconfig.json PieceValue -o src/tcf/schema/PieceValue.json && npx typescript-json-schema --required ./tsconfig.json ValueProperties -o src/tcf/schema/ValueProperties.json && npx typescript-json-schema --required ./tsconfig.json TCFCodeAreaLineNumbers -o src/tcf/schema/TCFCodeAreaLineNumbers.json && npx typescript-json-schema --required ./tsconfig.json MemoryErrorAddress -o src/tcf/schema/MemoryErrorAddress.json && npx typescript-json-schema --required ./tsconfig.json MemoryResult -o src/tcf/schema/MemoryResult.json && npx typescript-json-schema --required ./tsconfig.json TCFContextData -o src/tcf/schema/TCFContextData.json && npx typescript-json-schema --required ./tsconfig.json TCFStateData -o src/tcf/schema/TCFStateData.json && npx typescript-json-schema --required ./tsconfig.json ContextSuspendedData -o src/tcf/schema/ContextSuspendedData.json && npx typescript-json-schema --required ./tsconfig.json TCFContextDataStackTrace -o src/tcf/schema/TCFContextDataStackTrace.json && npx typescript-json-schema --required ./tsconfig.json TCFSymbolContextData -o src/tcf/schema/TCFSymbolContextData.json",
+    "generate": "npm run genschema"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.1",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.79.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
+    "@vscode/test-electron": "^2.3.4",
+    "@vscode/vsce": "^2.21.0",
+    "eslint": "^8.49.0",
+    "mocha": "^10.2.0",
+    "typescript": "^5.2.2",
+    "typescript-json-schema": "^0.61.0"
+  },
+  "dependencies": {
+    "@vscode/debugadapter": "1.63.0",
+    "@vscode/debugprotocol": "1.63.0"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "timestamp",
+        "title": "Insert timestamp",
+        "category": "Build"
+      }
+    ],
+    "configuration": {
+      "title": "TCF Debugger",
+      "properties": {
+        "tcf.executePathMapper": {
+          "type": "boolean",
+          "default": true,
+          "description": "Execute path mapper function, if defined in launch configuration."
+        }
+      }
+    },
+    "breakpoints": [
+      {
+        "language": "c"
+      },
+      {
+        "language": "cpp"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "vpu",
+        "label": "VPU debugging (deprecated, migrate to `tcf`)",
+        "configurationAttributes": {
+          "launch": {
+            "required": []
+          }
+        }
+      },
+      {
+        "type": "tcf",
+        "label": "Target Communication Framework (TCF) Debugger",
+        "configurationAttributes": {
+          "launch": {
+            "required": [],
+            "properties": {
+              "host": {
+                "type": "string",
+                "description": "(Remote) TCF agent host",
+                "default": "localhost"
+              },
+              "port": {
+                "type": "number",
+                "description": "TCF connection port",
+                "default": 1534
+              },
+              "record": {
+                "type": "string",
+                "description": "File path where TCF messages will be recorded into"
+              },
+              "playback": {
+                "type": "string",
+                "description": "File path with recorded TCF message which will be used to replay TCF messages (host and port will be ignored)"
+              },
+              "debugTCFMessages": {
+                "type": "boolean",
+                "description": "Show TCF messages in the debug console"
+              },
+              "timeout": {
+                "type": "number",
+                "description": "Debug commands timeout (milliseconds)",
+                "default": 10000
+              },
+              "pathMapper": {
+                "type": "string",
+                "description": "A Javascript function to map a local path to the debugger path",
+                "default": "return function (path, context) { return path; }"
+              }
+            }
+          }
+        },
+        "configurationSnippets": [
+          {
+            "label": "TCF Debug: Launch",
+            "description": "Launch a TCF debugging session",
+            "body": {
+              "type": "tcf",
+              "request": "launch",
+              "name": "Debug program over TCF"
+            }
+          }
+        ]
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "npu",
+        "required": [
+          "task"
+        ],
+        "properties": {
+          "task": {
+            "type": "string",
+            "description": "The Make task to customize"
+          },
+          "file": {
+            "type": "string",
+            "description": "The Make file that provides the task. Can be omitted."
+          },
+          "label": {
+            "type": "string",
+            "description": "My task label description"
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,82 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "StateData": {
+            "properties": {
+                "BPs": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "CPU": {
+                    "type": "string"
+                },
+                "Context": {
+                    "type": "string"
+                },
+                "FuncCall": {
+                    "type": "boolean"
+                },
+                "PCError": {
+                    "additionalProperties": true,
+                    "properties": {},
+                    "type": "object"
+                },
+                "Reversing": {
+                    "type": "boolean"
+                },
+                "Signal": {
+                    "type": "number"
+                },
+                "SignalDescription": {
+                    "type": "string"
+                },
+                "SignalName": {
+                    "type": "string"
+                },
+                "StateName": {
+                    "type": "string"
+                },
+                "StepError": {
+                    "additionalProperties": true,
+                    "properties": {},
+                    "type": "object"
+                }
+            },
+            "type": "object"
+        }
+    },
+    "properties": {
+        "data": {
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/StateData"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "lastStateReason": {
+            "type": [
+                "null",
+                "string"
+            ]
+        },
+        "pc": {
+            "type": "number"
+        },
+        "suspended": {
+            "type": "boolean"
+        }
+    },
+    "required": [
+        "data",
+        "lastStateReason",
+        "pc",
+        "suspended"
+    ],
+    "type": "object"
+}
+

@@ -1,0 +1,43 @@
+{
+    "$ref": "#/definitions/TCFError",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "TCFError": {
+            "properties": {
+                "AltCode": {
+                    "type": "number"
+                },
+                "AltOrg": {
+                    "type": "string"
+                },
+                "CausedBy": {
+                    "$ref": "#/definitions/TCFError"
+                },
+                "Code": {
+                    "type": "number"
+                },
+                "Format": {
+                    "type": "string"
+                },
+                "Params": {
+                    "items": {},
+                    "type": "array"
+                },
+                "Service": {
+                    "type": "string"
+                },
+                "Severity": {
+                    "type": "number"
+                },
+                "Time": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "Code"
+            ],
+            "type": "object"
+        }
+    }
+}
+

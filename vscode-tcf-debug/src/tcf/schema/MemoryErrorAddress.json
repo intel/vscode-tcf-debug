@@ -1,0 +1,23 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+        "addr": {
+            "type": "number"
+        },
+        "msg": {},
+        "size": {
+            "type": "number"
+        },
+        "stat": {
+            "type": "number"
+        }
+    },
+    "required": [
+        "addr",
+        "msg",
+        "size",
+        "stat"
+    ],
+    "type": "object"
+}
+

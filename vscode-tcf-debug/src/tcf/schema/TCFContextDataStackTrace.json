@@ -1,0 +1,110 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "TCFCodeAreaLineNumbers": {
+            "properties": {
+                "BasicBlock": {
+                    "type": "boolean"
+                },
+                "Dir": {
+                    "type": "string"
+                },
+                "Discriminator": {
+                    "type": "number"
+                },
+                "EAddr": {
+                    "type": "number"
+                },
+                "ECol": {
+                    "type": "number"
+                },
+                "ELine": {
+                    "type": "number"
+                },
+                "EpilogueBegin": {
+                    "type": "boolean"
+                },
+                "File": {
+                    "type": "string"
+                },
+                "ISA": {
+                    "type": "number"
+                },
+                "IsStmt": {
+                    "type": "boolean"
+                },
+                "NAddr": {
+                    "type": "number"
+                },
+                "NStmtAddr": {
+                    "type": "number"
+                },
+                "OpIndex": {
+                    "type": "number"
+                },
+                "PrologueEnd": {
+                    "type": "boolean"
+                },
+                "SAddr": {
+                    "type": "number"
+                },
+                "SCol": {
+                    "type": "number"
+                },
+                "SLine": {
+                    "type": "number"
+                }
+            },
+            "type": "object"
+        }
+    },
+    "properties": {
+        "ArgsAddr": {
+            "type": "number"
+        },
+        "ArgsCnt": {
+            "type": "number"
+        },
+        "CodeArea": {
+            "$ref": "#/definitions/TCFCodeAreaLineNumbers"
+        },
+        "FP": {
+            "type": "number"
+        },
+        "FuncID": {
+            "type": "string"
+        },
+        "ID": {
+            "type": "string"
+        },
+        "IP": {
+            "type": "number"
+        },
+        "Index": {
+            "type": "number"
+        },
+        "Name": {
+            "type": "string"
+        },
+        "ParentID": {
+            "type": "string"
+        },
+        "ProcessID": {
+            "type": "string"
+        },
+        "RP": {
+            "type": "number"
+        },
+        "TopFrame": {
+            "type": "boolean"
+        },
+        "Walk": {
+            "type": "boolean"
+        }
+    },
+    "required": [
+        "ID"
+    ],
+    "type": "object"
+}
+

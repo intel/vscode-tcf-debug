@@ -1,0 +1,98 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "TCFSymbolClass": {
+            "enum": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+            ],
+            "type": "number"
+        }
+    },
+    "properties": {
+        "Address": {
+            "type": "number"
+        },
+        "BaseTypeID": {
+            "type": [
+                "null",
+                "string"
+            ]
+        },
+        "Class": {
+            "$ref": "#/definitions/TCFSymbolClass"
+        },
+        "ContainerID": {
+            "type": [
+                "null",
+                "string"
+            ]
+        },
+        "Flags": {
+            "type": "number"
+        },
+        "ID": {
+            "type": "string"
+        },
+        "Length": {
+            "type": "number"
+        },
+        "Name": {
+            "type": [
+                "null",
+                "string"
+            ]
+        },
+        "Offset": {
+            "type": "number"
+        },
+        "OwnerID": {
+            "type": "string"
+        },
+        "Register": {
+            "type": "string"
+        },
+        "Size": {
+            "type": "number"
+        },
+        "TypeClass": {
+            "enum": [
+                0,
+                1,
+                10,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+            ],
+            "type": "number"
+        },
+        "TypeID": {
+            "type": "string"
+        },
+        "UpdatePolicy": {
+            "type": "number"
+        },
+        "Value": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "Class",
+        "ID"
+    ],
+    "type": "object"
+}
+

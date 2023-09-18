@@ -1,0 +1,40 @@
+{
+  "name": "@intel/tcf",
+  "version": "0.2.2",
+  "description": "TCF client library.",
+  "main": "./out/tcf-all.js",
+  "types": "./out/tcf-all.d.ts",
+  "files": [
+    "/out"
+  ],
+  "scripts": {
+    "precompile": "mkdir src && cp -R ../vscode-tcf-debug/src/tcf src/ && cp ../vscode-tcf-debug/src/tcf*.ts src && cp ../vscode-tcf-debug/src/pcap.ts src && cp ../vscode-tcf-debug/src/mocksocket.ts src && cp -R ../vscode-tcf-debug/src/variables src/variables",
+    "compile": "tsc -p ./"
+  },
+  "author": "ebold",
+  "contributors": [
+    {
+      "name": "ebold",
+      "email": "emilian.bold@intel.com"
+    },
+    {
+      "name": "oostoia",
+      "email": "ovidiu.ostoia@intel.com"
+    },
+    {
+      "name": "alicesto",
+      "email": "alice.stoian@intel.com"
+    }
+  ],
+  "license": "MIT",
+  "private": "true",
+  "devDependencies": {
+    "@types/mocha": "^10.0.0",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^6.6.0",
+    "@typescript-eslint/parser": "^6.6.0",
+    "eslint": "^8.49.0",
+    "mocha": "^10.1.0",
+    "typescript": "^5.2.2"
+  }
+}

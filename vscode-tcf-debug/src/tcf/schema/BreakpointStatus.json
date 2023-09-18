@@ -1,0 +1,66 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "InstanceStatusData": {
+            "properties": {
+                "Address": {
+                    "type": [
+                        "string",
+                        "number"
+                    ]
+                },
+                "BreakpointType": {
+                    "type": "string"
+                },
+                "ConditionError": {
+                    "type": "string"
+                },
+                "Error": {
+                    "type": "string"
+                },
+                "HitCount": {
+                    "type": "number"
+                },
+                "LocationContext": {
+                    "type": "string"
+                },
+                "MemoryContext": {
+                    "type": "string"
+                },
+                "Size": {
+                    "type": "number"
+                }
+            },
+            "type": "object"
+        }
+    },
+    "properties": {
+        "Column": {
+            "type": "number"
+        },
+        "Error": {
+            "type": "string"
+        },
+        "File": {
+            "type": "string"
+        },
+        "Instances": {
+            "anyOf": [
+                {
+                    "items": {
+                        "$ref": "#/definitions/InstanceStatusData"
+                    },
+                    "type": "array"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "Line": {
+            "type": "number"
+        }
+    },
+    "type": "object"
+}
+

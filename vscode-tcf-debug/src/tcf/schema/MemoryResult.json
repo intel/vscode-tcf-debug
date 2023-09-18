@@ -1,0 +1,50 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "MemoryErrorAddress": {
+            "properties": {
+                "addr": {
+                    "type": "number"
+                },
+                "msg": {},
+                "size": {
+                    "type": "number"
+                },
+                "stat": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "addr",
+                "msg",
+                "size",
+                "stat"
+            ],
+            "type": "object"
+        }
+    },
+    "properties": {
+        "base64": {
+            "type": "string"
+        },
+        "errorAddresses": {
+            "anyOf": [
+                {
+                    "items": {
+                        "$ref": "#/definitions/MemoryErrorAddress"
+                    },
+                    "type": "array"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        }
+    },
+    "required": [
+        "base64",
+        "errorAddresses"
+    ],
+    "type": "object"
+}
+

@@ -1,0 +1,61 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+        "CPUGroup": {
+            "type": "string"
+        },
+        "CanCount": {
+            "type": "number"
+        },
+        "CanDetach": {
+            "type": "boolean"
+        },
+        "CanResume": {
+            "type": "number"
+        },
+        "CanSuspend": {
+            "type": "boolean"
+        },
+        "CanTerminate": {
+            "type": "boolean"
+        },
+        "HasState": {
+            "type": "boolean"
+        },
+        "ID": {
+            "type": "string"
+        },
+        "IsContainer": {
+            "type": "boolean"
+        },
+        "Name": {
+            "type": "string"
+        },
+        "ParentID": {
+            "type": "string"
+        },
+        "ProcessID": {
+            "type": "string"
+        },
+        "RCGroup": {
+            "type": "string"
+        },
+        "RegAccessTypes": {
+            "items": {
+                "type": "string"
+            },
+            "type": "array"
+        },
+        "SymbolsGroup": {
+            "type": "string"
+        },
+        "WordSize": {
+            "type": "number"
+        }
+    },
+    "required": [
+        "ID"
+    ],
+    "type": "object"
+}
+

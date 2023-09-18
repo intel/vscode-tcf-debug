@@ -1,0 +1,37 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+        "CanAssign": {
+            "type": "boolean"
+        },
+        "Class": {
+            "type": "number"
+        },
+        "Expression": {
+            "type": "string"
+        },
+        "HasFuncCall": {
+            "type": "boolean"
+        },
+        "ID": {
+            "type": "string"
+        },
+        "ParentID": {
+            "type": "string"
+        },
+        "Size": {
+            "type": "number"
+        },
+        "SymbolID": {
+            "type": "string"
+        },
+        "Type": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "ID"
+    ],
+    "type": "object"
+}
+

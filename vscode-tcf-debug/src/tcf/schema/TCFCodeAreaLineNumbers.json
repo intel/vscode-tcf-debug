@@ -1,0 +1,58 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+        "BasicBlock": {
+            "type": "boolean"
+        },
+        "Dir": {
+            "type": "string"
+        },
+        "Discriminator": {
+            "type": "number"
+        },
+        "EAddr": {
+            "type": "number"
+        },
+        "ECol": {
+            "type": "number"
+        },
+        "ELine": {
+            "type": "number"
+        },
+        "EpilogueBegin": {
+            "type": "boolean"
+        },
+        "File": {
+            "type": "string"
+        },
+        "ISA": {
+            "type": "number"
+        },
+        "IsStmt": {
+            "type": "boolean"
+        },
+        "NAddr": {
+            "type": "number"
+        },
+        "NStmtAddr": {
+            "type": "number"
+        },
+        "OpIndex": {
+            "type": "number"
+        },
+        "PrologueEnd": {
+            "type": "boolean"
+        },
+        "SAddr": {
+            "type": "number"
+        },
+        "SCol": {
+            "type": "number"
+        },
+        "SLine": {
+            "type": "number"
+        }
+    },
+    "type": "object"
+}
+
