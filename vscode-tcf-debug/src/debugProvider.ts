@@ -29,6 +29,7 @@ import {
 import { promises } from 'fs';
 import { LifetimeDebugSession } from './lifetimeDebugSession';
 import * as validateLauchRequestArguments from './validators/validate-TCFLaunchRequestArguments';
+import { DisassembleDisassemblyCommand, DisassemblyParameters, GetCapabilitiesDisassemblyCommand } from './tcf/disassembly';
 
 //see package.json configurationAttributes
 export interface TCFLaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
@@ -106,7 +107,8 @@ enum ErrorCodes {
 	stepOutError,
 	pauseError,
 	stackTraceError,
-	watchError
+	watchError,
+	disassemblyError
 }
 
 //see https://microsoft.github.io/debug-adapter-protocol/specification#Events_Stopped
@@ -410,6 +412,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		response.body.supportSuspendDebuggee = true;
 		response.body.supportTerminateDebuggee = true;
 		response.body.supportsSingleThreadExecutionRequests = true; //we can pause/resume a single CPU, surely?
+		response.body.supportsDisassembleRequest = true;
 
 		this.tcfLogger.log("TCF debug session initialized");
 
@@ -544,6 +547,11 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		});
 	}
 
+	// This is just an initial map<address number as string, context id>.
+	// It's not necessarily good as a map since VSCode may increment while scrolling the address and thus make valid requests
+	// using addresses that are not in this map. Still, it's good enough for basic disassembly support.
+	stackMemoryRefence: Map<string, string> = new Map();
+
 	protected async _stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.StackTraceRequest, cancellationToken: CancellationFunction = NEVER_CANCELLED) {
 		const contextID = this.threadIdToContext.get(args.threadId);
 		if (!contextID) {
@@ -555,6 +563,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		const contextData = await this.tcfClient.getStackTrace(contextID, cancellationToken);
 		contextData.reverse(); //users generally expect to the the last stack first in the UI
 
+		this.stackMemoryRefence.clear(); //get rid of old context IDs and addresses
 		let stackFrames = [];
 
 		for (const c of contextData) {
@@ -581,6 +590,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 				c.mapToSource?.SCol);
 			if (c.context.IP) {
 				s.instructionPointerReference = String(c.context.IP);
+				this.stackMemoryRefence.set(String(c.context.IP), contextID); //Note the context is *not* c.context.ID which is something else
 			}
 			stackFrames.push(s);
 		}
@@ -950,6 +960,47 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		} catch (e) {
 			logger.error("Error " + JSON.stringify(e));
 		}
+	}
+
+	protected async disassembleRequestAsync(response: DebugProtocol.DisassembleResponse, args: DebugProtocol.DisassembleArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
+		if (args.instructionOffset) {
+			//TODO: Implement, if possible, disassembly offset support.
+		}
+		const contextID = this.stackMemoryRefence.get(args.memoryReference);
+		if (contextID === undefined) {
+			this.sendErrorResponse(response, ErrorCodes.disassemblyError, "Unknown memory reference (not a stack)");
+			return;
+		}
+		const capabilities = await this.tcfClient.sendCommand(new GetCapabilitiesDisassemblyCommand(contextID));
+		if (capabilities === null || capabilities.length === 0) {
+			this.sendResponse(response); //maybe send error?
+			return;
+		}
+
+		const disassemblyLines = await this.tcfClient.sendCommand(new DisassembleDisassemblyCommand(contextID, Number(args.memoryReference) + (args.offset ?? 0), args.instructionCount, { //XXX: Note we assume the memory reference is a number...
+			/* eslint-disable @typescript-eslint/naming-convention */
+			ISA: capabilities[0].ISA,
+			//Not sure what to send here, so let's do false for all
+			Simplified: false,
+			PseudoInstructions: false,
+			OpcodeValue: false
+			/* eslint-enable */
+		} as DisassemblyParameters));
+
+		if (disassemblyLines === null) {
+			this.sendResponse(response); //maybe send error?
+			return;
+		}
+
+		response.body = {
+			instructions: disassemblyLines.map(l => {
+				return {
+					address: String(l.Address),
+					instruction: l.Instruction !== null ? l.Instruction[0].Text : "NULL", //what does it mean to have more instructions per address?
+				} as DebugProtocol.DisassembledInstruction;
+			})
+		};
+		this.sendResponse(response);
 	}
 
 	protected disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request | undefined): void {
