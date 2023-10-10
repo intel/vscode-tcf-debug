@@ -366,6 +366,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			if (contexts.size !== 1) {
 				//note sure what more than a single context hit means: multiple threads stopped at once?
 				//TODO: log unexpected situation?
+				this.console.log(`Same breakpoint hit on multiple contexts (threadIds)!`);
 				return;
 			}
 
