@@ -374,7 +374,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			//single context hit, find the corresponding threadId
 			const context = contexts.values().next().value;
 
-			this.verifyInlinedBreakpoint(context, breakpointTcfId);
+			void(this.verifyInlinedBreakpoint(context, breakpointTcfId)); //TODO: Should this be await-ed instead of ignored with the void operator?
 
 			//NOTE: *If* we don't know the thread ID, it may be a new thread or we have never had a threadsRequest.
 			// So, we assign a new threadId and hope VSCode will get a Thread instance with this id when it calls threadRequest

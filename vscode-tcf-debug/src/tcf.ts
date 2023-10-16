@@ -126,7 +126,7 @@ export abstract class AbstractTCFClient {
     async setBreakpoints(path: string, clientLines: number[], ids: string[]) {
         //allowing empty list of breakpoints since it may clear they breakpoints
         const breakpoints = this.createBreakpoints(path, clientLines, ids);
-        this.setBreakpointsList(breakpoints);
+        await this.setBreakpointsList(breakpoints);
     }
 
     async setBreakpointsList(breakpoints: BreakpointData[]) {
