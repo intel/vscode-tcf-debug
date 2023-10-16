@@ -55,7 +55,8 @@ var server = net.createServer(function (socket) {
         console.log("Disconnecting");
         socket.end();
         console.log("Closing pcap file");
-        pcapClose(pcapFile);
+        pcapFile.close()
+            .catch(e => console.log(e));
     });
 
     {
@@ -91,7 +92,8 @@ var server = net.createServer(function (socket) {
         proxy.end();
 
         console.log("Closing pcap file");
-        pcapClose(pcapFile);
+        pcapFile.close()
+            .catch(e => console.log(e));
     });
 });
 

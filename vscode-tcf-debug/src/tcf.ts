@@ -10,7 +10,7 @@ import { QueryCommand } from './tcf/contextquery';
 
 import * as net from "net";
 import { TCFError, TCFErrorCodes } from './tcf/error';
-import { ipv4Header, pcapAppend, pcapClose } from './pcap';
+import { WriteablePcap, ipv4Header, pcapAppend, pcapClose } from './pcap';
 import { MockTCFSocket, Sockety } from './mocksocket';
 
 export interface TCFLogger {
@@ -58,7 +58,7 @@ const PCAP_OTHER_HOST = [127, 0, 0, 2];
 export abstract class AbstractTCFClient {
     console: TCFLogger;
     contextInfo: { [key: string]: TCFContextData } = {};
-    pcapFile: number | null = null;
+    pcapFile: WriteablePcap | null = null;
     playbackPath: string | null = null;
     tokenIdGenerator: SimpleCommandStamper;
     commandTimeout: number = DEFAULT_COMMAND_TIMEOUT_MS;
@@ -81,7 +81,7 @@ export abstract class AbstractTCFClient {
      * Records all TCF messages to a pcap file
      * @param fd
      */
-    setPcapFile(fd: number) {
+    setPcapFile(fd: WriteablePcap) {
         this.pcapFile = fd;
     }
 
@@ -512,7 +512,8 @@ export abstract class AbstractTCFClient {
             this.socket.end();
         }
         if (this.pcapFile !== null) {
-            pcapClose(this.pcapFile);
+            this.pcapFile.close()
+                .catch(e => console.log(e)); //TODO: Just printing this error is iffy. Maybe disconnect itself should be async?
             this.pcapFile = null;
         }
     }
