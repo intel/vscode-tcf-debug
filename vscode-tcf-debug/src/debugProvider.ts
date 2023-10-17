@@ -524,7 +524,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			}
 		} finally {
 			if (request?.seq) {
-				console.log(`Removing finished request ${request.seq}`);
+				// console.log(`Removing finished request ${request.seq}`);
 				this.ongoingPromises.delete(request.seq);
 			}
 		}
@@ -595,7 +595,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 
 
 	protected async threadsRequestAsync(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request) {
-		console.log("Got threadRequest " + JSON.stringify(request));
+		// console.log("Got threadRequest " + JSON.stringify(request));
 
 		let cancellationToken = () => false;
 		if (request) {
@@ -633,7 +633,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 					try {
 						const breakpointID = await this.findBreakpoint(x.info.ID, x.state.pc);
 						if (cancellationToken()) {
-							console.log("Token cancelled");
+							// console.log("Token cancelled");
 							return;
 						} else {
 							await this.tcfClient.verifyInlinedBreakpoint(x.info.ID, breakpointID);
@@ -960,7 +960,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 	private ongoingPromises = new Set<number>();
 
 	protected cancelRequest(response: DebugProtocol.CancelResponse, args: DebugProtocol.CancelArguments, request?: DebugProtocol.Request): void {
-		console.log("Cancelled request " + request);
+		// console.log("Cancelled request " + request);
 		if (args.requestId) {
 			const removed = this.ongoingPromises.delete(args.requestId);
 			if (!removed) {

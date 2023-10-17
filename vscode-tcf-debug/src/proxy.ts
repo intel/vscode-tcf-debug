@@ -2,6 +2,7 @@
 Copyright (C) 2023 Intel Corporation
 SPDX-License-Identifier: MIT
 */
+/* eslint no-console: "off" */
 import * as net from "net";
 import { ipv4Header, pcapAppend, pcapClose, pcapCreate } from "./tcf-all";
 

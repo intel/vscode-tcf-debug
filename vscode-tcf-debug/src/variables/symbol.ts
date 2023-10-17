@@ -3,6 +3,7 @@ Copyright (C) 2023 Intel Corporation
 SPDX-License-Identifier: MIT
 */
 import { GetChildrenMemoryCommand, GetMemoryCommand, MemoryResult, TCFSymbolContextData } from "../tcf-all";
+import { Logger } from "./helper";
 import { RawValueProvider, VariableHelper } from "./types";
 
 export const SYM_FLAG_BIG_ENDIAN = 0x00001000;
@@ -17,14 +18,16 @@ export class SymbolRawValueProvider implements RawValueProvider {
     symbol: TCFSymbolContextData;
     helper: VariableHelper;
     context: string;
+    logger: Logger;
 
-    constructor(symbol: TCFSymbolContextData, context: string, helper: VariableHelper) {
+    constructor(symbol: TCFSymbolContextData, context: string, helper: VariableHelper, log: Logger) {
         this.symbol = symbol;
         this.helper = helper;
         this.context = context; //TODO: let's hope this context does something. delete if nhot
         if (symbol.Flags !== undefined) {
             this.bigEndian = (symbol.Flags & SYM_FLAG_BIG_ENDIAN) !== 0;
         }
+        this.logger = log;
     }
 
     //A horrible hack to read the memory by looking into *ALL* the context IDs.
@@ -61,7 +64,7 @@ export class SymbolRawValueProvider implements RawValueProvider {
                 const r: MemoryResult = await this.helper.sendCommand(new GetMemoryCommand(this.context, this.symbol.Address, 1, this.symbol.Size)); //TODO: what is the wordsize here? assuming 1 (probably wrongly)
                 this.rawValue = Buffer.from(Buffer.from(r.base64).toString(), "base64");
             } catch (e) {
-                console.log(e);
+                this.logger.log(String(e));
             }
         }
     }

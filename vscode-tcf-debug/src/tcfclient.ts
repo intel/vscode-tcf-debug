@@ -114,12 +114,15 @@ export abstract class TCFClient extends AbstractTCFClient {
 
         const self = this;
         const helper = new class extends DefaultVariableHelper {
+            log(message: string): void {
+                self.console.log(message);
+            }
             sendCommand<T>(c: SimpleCommand<T>): Promise<T> {
                 return self.sendCommand(c);
             }
         }();
 
-        return helper.createVariable(typeDetails, symbolDetails, new SymbolNameProvider(symbolDetails), new SymbolRawValueProvider(symbolDetails, ctx, helper));
+        return helper.createVariable(typeDetails, symbolDetails, new SymbolNameProvider(symbolDetails), new SymbolRawValueProvider(symbolDetails, ctx, helper, helper /* as Logger */));
     }
 
     async loadChildren(contextId: string | null) {

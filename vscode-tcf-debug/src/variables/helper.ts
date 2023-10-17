@@ -11,7 +11,11 @@ import { RawVariable } from "./raw";
 import { SYM_FLAG_TYPEDEF, SYM_FLAG_TYPE_PARAMETER } from "./symbol";
 import { ClientVariable, NameProvider, RawValueProvider, VariableHelper } from "./types";
 
-export abstract class DefaultVariableHelper implements VariableHelper {
+export interface Logger {
+    log(message: string): void;
+}
+
+export abstract class DefaultVariableHelper implements VariableHelper, Logger {
     abstract sendCommand<T>(c: SimpleCommand<T>): Promise<T>;
 
     createVariable(typeDetails: TCFSymbolContextData, symbolDetails: TCFSymbolContextData | undefined, nameProvider: NameProvider, valueProvider: RawValueProvider): ClientVariable | undefined {
@@ -23,7 +27,7 @@ export abstract class DefaultVariableHelper implements VariableHelper {
             case TCFTypeClass.integer:
             case TCFTypeClass.cardinal:
             case TCFTypeClass.real:
-                return new PrimitiveVariable(typeDetails, symbolDetails, nameProvider, valueProvider);
+                return new PrimitiveVariable(typeDetails, symbolDetails, nameProvider, valueProvider, this);
             case TCFTypeClass.pointer:
                 return new PointerVariable(typeDetails, symbolDetails, nameProvider, valueProvider, this);
             case TCFTypeClass.composite:
@@ -36,7 +40,7 @@ export abstract class DefaultVariableHelper implements VariableHelper {
                 return new ArrayVariable(typeDetails, this, nameProvider, valueProvider);
             case TCFTypeClass.enumeration:
             case TCFTypeClass.function:
-                console.log(`Function/enum variable ${JSON.stringify(typeDetails)} ${JSON.stringify(symbolDetails)}`);
+                this.log(`Function/enum variable ${JSON.stringify(typeDetails)} ${JSON.stringify(symbolDetails)}`);
                 return undefined;
             default:
                 return new RawVariable(typeDetails, symbolDetails, [], nameProvider, valueProvider);
@@ -64,4 +68,6 @@ export abstract class DefaultVariableHelper implements VariableHelper {
 
         return false;
     }
+
+    abstract log(message: string): void;
 }
