@@ -1,7 +1,7 @@
 "use strict";
 module.exports = validate20;
 module.exports.default = validate20;
-const schema22 = {"$schema":"http://json-schema.org/draft-07/schema#","properties":{"AddressSpace":{"type":"string"},"Text":{"type":"string"},"Type":{"type":"string"},"Value":{"type":"number"}},"required":["AddressSpace","Text","Type","Value"],"type":"object"};
+const schema22 = {"$schema":"http://json-schema.org/draft-07/schema#","properties":{"AddressSpace":{"type":"string"},"Text":{"type":"string"},"Type":{"type":"string"},"Value":{"type":"number"}},"required":["Text","Type"],"type":"object"};
 
 function validate20(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
@@ -9,7 +9,7 @@ let errors = 0;
 if(errors === 0){
 if(data && typeof data == "object" && !Array.isArray(data)){
 let missing0;
-if(((((data.AddressSpace === undefined) && (missing0 = "AddressSpace")) || ((data.Text === undefined) && (missing0 = "Text"))) || ((data.Type === undefined) && (missing0 = "Type"))) || ((data.Value === undefined) && (missing0 = "Value"))){
+if(((data.Text === undefined) && (missing0 = "Text")) || ((data.Type === undefined) && (missing0 = "Type"))){
 validate20.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
 return false;
 }

@@ -1,8 +1,8 @@
 "use strict";
 module.exports = validate20;
 module.exports.default = validate20;
-const schema22 = {"$schema":"http://json-schema.org/draft-07/schema#","definitions":{"DisassemblyInstructionField":{"properties":{"AddressSpace":{"type":"string"},"Text":{"type":"string"},"Type":{"type":"string"},"Value":{"type":"number"}},"required":["AddressSpace","Text","Type","Value"],"type":"object"}},"properties":{"Address":{"type":"number"},"ISA":{"type":"string"},"Instruction":{"anyOf":[{"items":{"$ref":"#/definitions/DisassemblyInstructionField"},"type":"array"},{"type":"null"}]},"OpcodeValue":{"type":"string"},"Size":{"type":"number"}},"required":["Address","ISA","Instruction","OpcodeValue","Size"],"type":"object"};
-const schema23 = {"properties":{"AddressSpace":{"type":"string"},"Text":{"type":"string"},"Type":{"type":"string"},"Value":{"type":"number"}},"required":["AddressSpace","Text","Type","Value"],"type":"object"};
+const schema22 = {"$schema":"http://json-schema.org/draft-07/schema#","definitions":{"DisassemblyInstructionField":{"properties":{"AddressSpace":{"type":"string"},"Text":{"type":"string"},"Type":{"type":"string"},"Value":{"type":"number"}},"required":["Text","Type"],"type":"object"}},"properties":{"Address":{"type":"number"},"ISA":{"type":"string"},"Instruction":{"anyOf":[{"items":{"$ref":"#/definitions/DisassemblyInstructionField"},"type":"array"},{"type":"null"}]},"OpcodeValue":{"type":"string"},"Size":{"type":"number"}},"required":["Address","Instruction","Size"],"type":"object"};
+const schema23 = {"properties":{"AddressSpace":{"type":"string"},"Text":{"type":"string"},"Type":{"type":"string"},"Value":{"type":"number"}},"required":["Text","Type"],"type":"object"};
 
 function validate20(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
@@ -10,7 +10,7 @@ let errors = 0;
 if(errors === 0){
 if(data && typeof data == "object" && !Array.isArray(data)){
 let missing0;
-if((((((data.Address === undefined) && (missing0 = "Address")) || ((data.ISA === undefined) && (missing0 = "ISA"))) || ((data.Instruction === undefined) && (missing0 = "Instruction"))) || ((data.OpcodeValue === undefined) && (missing0 = "OpcodeValue"))) || ((data.Size === undefined) && (missing0 = "Size"))){
+if((((data.Address === undefined) && (missing0 = "Address")) || ((data.Instruction === undefined) && (missing0 = "Instruction"))) || ((data.Size === undefined) && (missing0 = "Size"))){
 validate20.errors = [{instancePath,schemaPath:"#/required",keyword:"required",params:{missingProperty: missing0},message:"must have required property '"+missing0+"'"}];
 return false;
 }
@@ -57,7 +57,7 @@ const _errs10 = errors;
 if(errors === _errs10){
 if(data3 && typeof data3 == "object" && !Array.isArray(data3)){
 let missing1;
-if(((((data3.AddressSpace === undefined) && (missing1 = "AddressSpace")) || ((data3.Text === undefined) && (missing1 = "Text"))) || ((data3.Type === undefined) && (missing1 = "Type"))) || ((data3.Value === undefined) && (missing1 = "Value"))){
+if(((data3.Text === undefined) && (missing1 = "Text")) || ((data3.Type === undefined) && (missing1 = "Type"))){
 const err0 = {instancePath:instancePath+"/Instruction/" + i0,schemaPath:"#/definitions/DisassemblyInstructionField/required",keyword:"required",params:{missingProperty: missing1},message:"must have required property '"+missing1+"'"};
 if(vErrors === null){
 vErrors = [err0];

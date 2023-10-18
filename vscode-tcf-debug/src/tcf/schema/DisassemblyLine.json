@@ -17,10 +17,8 @@
                 }
             },
             "required": [
-                "AddressSpace",
                 "Text",
-                "Type",
-                "Value"
+                "Type"
             ],
             "type": "object"
         }
@@ -54,9 +52,7 @@
     },
     "required": [
         "Address",
-        "ISA",
         "Instruction",
-        "OpcodeValue",
         "Size"
     ],
     "type": "object"

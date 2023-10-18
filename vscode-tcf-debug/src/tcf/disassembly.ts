@@ -61,11 +61,11 @@ export class GetCapabilitiesDisassemblyCommand extends DisassemblyCommand<Disass
 //see https://download.eclipse.org/tools/tcf/tcf-docs/TCF%20Service%20-%20Disassembly.html#CmdDisassemble
 /* eslint-disable @typescript-eslint/naming-convention */
 export interface DisassemblyLine {
-    ISA: string,
+    ISA?: string, //The spec doesn't mention this as optional, but in practice it is
     Address: number,
     Size: number,
     Instruction: DisassemblyInstructionField[] | null,
-    OpcodeValue: string
+    OpcodeValue?: string //The spec doesn't mention this as optional, but in practice it is
 }
 
 export enum DisassemblyInstructionFieldTypes {
@@ -77,10 +77,10 @@ export enum DisassemblyInstructionFieldTypes {
 }
 
 export interface DisassemblyInstructionField {
-    Type: DisassemblyInstructionFieldTypes | string,
+    Type: string, // usually one of the DisassemblyInstructionFieldTypes values
     Text: string,
-    Value: number,
-    AddressSpace: string //context id
+    Value?: number,
+    AddressSpace?: string //context id
 }
 
 export interface DisassemblyParameters {
