@@ -1,5 +1,9 @@
 ## Release notes
 
+### 0.2.4
+
+* Adds disassembly support for stack trace
+
 ### 0.2.3
 
 * Validates all TCF responses in order to be complaint with TCF specs
