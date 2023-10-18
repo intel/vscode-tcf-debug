@@ -1,0 +1,25 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+        "ISA": {
+            "type": "string"
+        },
+        "OpcodeValue": {
+            "type": "boolean"
+        },
+        "PseudoInstructions": {
+            "type": "boolean"
+        },
+        "Simplified": {
+            "type": "boolean"
+        }
+    },
+    "required": [
+        "ISA",
+        "OpcodeValue",
+        "PseudoInstructions",
+        "Simplified"
+    ],
+    "type": "object"
+}
+

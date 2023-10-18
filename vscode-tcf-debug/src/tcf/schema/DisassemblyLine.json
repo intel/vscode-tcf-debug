@@ -1,0 +1,64 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "definitions": {
+        "DisassemblyInstructionField": {
+            "properties": {
+                "AddressSpace": {
+                    "type": "string"
+                },
+                "Text": {
+                    "type": "string"
+                },
+                "Type": {
+                    "type": "string"
+                },
+                "Value": {
+                    "type": "number"
+                }
+            },
+            "required": [
+                "AddressSpace",
+                "Text",
+                "Type",
+                "Value"
+            ],
+            "type": "object"
+        }
+    },
+    "properties": {
+        "Address": {
+            "type": "number"
+        },
+        "ISA": {
+            "type": "string"
+        },
+        "Instruction": {
+            "anyOf": [
+                {
+                    "items": {
+                        "$ref": "#/definitions/DisassemblyInstructionField"
+                    },
+                    "type": "array"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "OpcodeValue": {
+            "type": "string"
+        },
+        "Size": {
+            "type": "number"
+        }
+    },
+    "required": [
+        "Address",
+        "ISA",
+        "Instruction",
+        "OpcodeValue",
+        "Size"
+    ],
+    "type": "object"
+}
+

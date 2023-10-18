@@ -2,7 +2,9 @@
 Copyright (C) 2023 Intel Corporation
 SPDX-License-Identifier: MIT
 */
-import { ValidatingCommand, toBuffer, validateJSON } from './tcfutils';
+import { ValidatingCommand, asNullableArray, toBuffer, validateJSON } from './tcfutils';
+import * as validateDisassemblyLine from './validators/validate-DisassemblyLine';
+import * as validateDisassemblyCapability from './validators/validate-DisassemblyCapability';
 
 let tokenCounter = 0;
 
@@ -43,7 +45,7 @@ export class GetCapabilitiesDisassemblyCommand extends DisassemblyCommand<Disass
     }
 
     cast(json: any): DisassemblyCapability[] | null {
-        return json as DisassemblyCapability[] | null; //TODO: validate!
+        return asNullableArray(json, asDisassemblyCapability);
     }
 
     command(): string {
@@ -89,6 +91,14 @@ export interface DisassemblyParameters {
 }
 /* eslint-enable */
 
+function asDisassemblyLine(json: any): DisassemblyLine {
+    return validateJSON(json, validateDisassemblyLine) as DisassemblyLine; //type assertion OK
+}
+
+function asDisassemblyCapability(json: any): DisassemblyCapability {
+    return validateJSON(json, validateDisassemblyCapability) as DisassemblyCapability; //type assertion OK
+}
+
 //see https://download.eclipse.org/tools/tcf/tcf-docs/TCF%20Service%20-%20Disassembly.html#CmdDisassemble
 export class DisassembleDisassemblyCommand extends DisassemblyCommand<DisassemblyLine[] | null> {
     contextID: string;
@@ -105,7 +115,7 @@ export class DisassembleDisassemblyCommand extends DisassemblyCommand<Disassembl
     }
 
     cast(json: any): DisassemblyLine[] | null {
-        return json as DisassemblyLine[] | null; //TODO: validate!
+        return asNullableArray(json, asDisassemblyLine);
     }
 
     command(): string {
