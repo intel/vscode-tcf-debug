@@ -114,12 +114,15 @@ export abstract class TCFClient extends AbstractTCFClient {
 
         const self = this;
         const helper = new class extends DefaultVariableHelper {
+            log(message: string): void {
+                self.console.log(message);
+            }
             sendCommand<T>(c: SimpleCommand<T>): Promise<T> {
                 return self.sendCommand(c);
             }
         }();
 
-        return helper.createVariable(typeDetails, symbolDetails, new SymbolNameProvider(symbolDetails), new SymbolRawValueProvider(symbolDetails, ctx, helper));
+        return helper.createVariable(typeDetails, symbolDetails, new SymbolNameProvider(symbolDetails), new SymbolRawValueProvider(symbolDetails, ctx, helper, helper /* as Logger */));
     }
 
     async loadChildren(contextId: string | null) {
@@ -181,6 +184,14 @@ export abstract class TCFClient extends AbstractTCFClient {
             if (cancellationToken()) {
                 throw new InterruptedError("Cancelled");
             }
+            if (childContext?.CodeArea) {
+                const sourceLine = childContext?.CodeArea;
+                if (sourceLine?.File && sourceLine?.SLine) {
+                    result.push({ context: childContext, mapToSource: sourceLine });
+                    //TODO: Note we are breaking early. It is possible we still need to get the symbol info to update the context Name (since this goes to the UI?)
+                    continue outerfor;
+                }
+            }
             if (childContext?.IP) {
                 try {
                     const symbol = await this.sendCommand(new FindByAddrSymbolsCommand(contextID, childContext.IP));
@@ -189,6 +200,7 @@ export abstract class TCFClient extends AbstractTCFClient {
                         if (symbolContext) {
                             if (symbolContext.TypeClass === TCFTypeClass.function) {
                                 //XXX: hack: let's just replace the returned Name
+                                //TODO: Get rid of the above hack and return this info properly... Not even entirely sure what it's supposed to do but presumably we display this Name in the VSCode stacktrace UI
                                 if (symbolContext.Name) {
                                     childContext.Name = symbolContext.Name;
                                 }

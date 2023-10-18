@@ -3,12 +3,15 @@ Copyright (C) 2023 Intel Corporation
 SPDX-License-Identifier: MIT
 */
 import { TCFSymbolContextData, TCFTypeClass } from "../tcf-all";
+import { Logger } from "./helper";
 import { AbstractVariable, ClientVariable, NameProvider, RawValueProvider } from "./types";
 
 export class PrimitiveVariable extends AbstractVariable {
+    logger: Logger;
 
-    constructor(type: TCFSymbolContextData, symbolDetails: TCFSymbolContextData | undefined, nameProvider: NameProvider, valueProvider: RawValueProvider) {
+    constructor(type: TCFSymbolContextData, symbolDetails: TCFSymbolContextData | undefined, nameProvider: NameProvider, valueProvider: RawValueProvider, log: Logger) {
         super(type, symbolDetails, nameProvider, valueProvider);
+        this.logger = log;
     }
 
     async getChildren(): Promise<ClientVariable[]> {
@@ -39,7 +42,7 @@ export class PrimitiveVariable extends AbstractVariable {
 
                         return String(variable16Value);
                     default:
-                        console.log(`Could not parse integer variable value for variable ${this.name()}. Expected 2, 4 or 8 bytes, found ${variableRawValue.length} bytes`);
+                        this.logger.log(`Could not parse integer variable value for variable ${this.name()}. Expected 2, 4 or 8 bytes, found ${variableRawValue.length} bytes`);
                         return undefined;
                 }
             case TCFTypeClass.cardinal: // UNSIGNED integer
@@ -57,7 +60,7 @@ export class PrimitiveVariable extends AbstractVariable {
 
                         return String(variable16Value);
                     default:
-                        console.log(`Could not parse unsigned integer variable value for variable ${this.name()}. Expected 2, 4 or 8 bytes, found ${variableRawValue.length} bytes`);
+                        this.logger.log(`Could not parse unsigned integer variable value for variable ${this.name()}. Expected 2, 4 or 8 bytes, found ${variableRawValue.length} bytes`);
                         return undefined;
                 }
             case TCFTypeClass.real:
@@ -71,11 +74,11 @@ export class PrimitiveVariable extends AbstractVariable {
 
                         return String(floatValue);
                     default:
-                        console.log(`Could not parse float/double variable value for variable ${this.name()}. Expected 4 or 8 bytes, found ${variableRawValue.length} bytes`);
+                        this.logger.log(`Could not parse float/double variable value for variable ${this.name()}. Expected 4 or 8 bytes, found ${variableRawValue.length} bytes`);
                         return undefined;
                 }
             default:
-                console.log(`Could not parse unknown primitive variable value for variable ${this.name()}, type class ${this.type.TypeClass}`);
+                this.logger.log(`Could not parse unknown primitive variable value for variable ${this.name()}, type class ${this.type.TypeClass}`);
                 return undefined;
         }
 

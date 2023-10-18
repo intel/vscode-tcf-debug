@@ -8,7 +8,7 @@ import { LoggingDebugSession } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 
 export function activate(context: vscode.ExtensionContext) {
-	vscode.window.showInformationMessage('TCF debugging extension is enabled.');
+	void(vscode.window.showInformationMessage('TCF debugging extension is enabled.'));
 
 	// debug-provider 
 	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('tcf', new TCFConfigurationProvider()));

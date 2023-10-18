@@ -213,7 +213,8 @@ export function parseEmptyResponse(responseAll: Buffer[], success: PromiseSucces
     }
 
     if (!responseLengthAbout(0, response)) {
-        console.log(`Response should have no JSON, got ${response.length} buffers`);
+        error(new SyntaxError(`Response should have no JSON, got ${response.length} buffers`));
+        return;
     }
 
     success(undefined);
@@ -228,7 +229,8 @@ export function parseResponse<T>(responseAll: Buffer[], success: PromiseSuccess<
     }
 
     if (!responseLengthAbout(1, response)) {
-        console.log(`Response should have a single JSON, got ${response.length} buffers`);
+        error(new SyntaxError(`Response should have a single JSON, got ${response.length} buffers`));
+        return;
     }
 
     try {

@@ -1,5 +1,11 @@
 ## Release notes
 
+### 0.2.3
+
+* Validates all TCF responses in order to be complaint with TCF specs
+* Fixes watch variable functionality when frameId is 0
+* Maintenance
+
 ### 0.2.2
 
 * Adds `watch` functionality for local variables

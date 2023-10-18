@@ -366,6 +366,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			if (contexts.size !== 1) {
 				//note sure what more than a single context hit means: multiple threads stopped at once?
 				//TODO: log unexpected situation?
+				this.console.log(`Same breakpoint hit on multiple contexts (threadIds)!`);
 				return;
 			}
 
@@ -373,7 +374,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			//single context hit, find the corresponding threadId
 			const context = contexts.values().next().value;
 
-			this.verifyInlinedBreakpoint(context, breakpointTcfId);
+			void(this.verifyInlinedBreakpoint(context, breakpointTcfId)); //TODO: Should this be await-ed instead of ignored with the void operator?
 
 			//NOTE: *If* we don't know the thread ID, it may be a new thread or we have never had a threadsRequest.
 			// So, we assign a new threadId and hope VSCode will get a Thread instance with this id when it calls threadRequest
@@ -523,7 +524,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			}
 		} finally {
 			if (request?.seq) {
-				console.log(`Removing finished request ${request.seq}`);
+				// console.log(`Removing finished request ${request.seq}`);
 				this.ongoingPromises.delete(request.seq);
 			}
 		}
@@ -594,7 +595,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 
 
 	protected async threadsRequestAsync(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request) {
-		console.log("Got threadRequest " + JSON.stringify(request));
+		// console.log("Got threadRequest " + JSON.stringify(request));
 
 		let cancellationToken = () => false;
 		if (request) {
@@ -632,7 +633,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 					try {
 						const breakpointID = await this.findBreakpoint(x.info.ID, x.state.pc);
 						if (cancellationToken()) {
-							console.log("Token cancelled");
+							// console.log("Token cancelled");
 							return;
 						} else {
 							await this.tcfClient.verifyInlinedBreakpoint(x.info.ID, breakpointID);
@@ -959,7 +960,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 	private ongoingPromises = new Set<number>();
 
 	protected cancelRequest(response: DebugProtocol.CancelResponse, args: DebugProtocol.CancelArguments, request?: DebugProtocol.Request): void {
-		console.log("Cancelled request " + request);
+		// console.log("Cancelled request " + request);
 		if (args.requestId) {
 			const removed = this.ongoingPromises.delete(args.requestId);
 			if (!removed) {

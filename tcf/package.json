@@ -1,6 +1,6 @@
 {
   "name": "@intel/tcf",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "TCF client library.",
   "main": "./out/tcf-all.js",
   "types": "./out/tcf-all.d.ts",
@@ -29,11 +29,11 @@
   "license": "MIT",
   "private": "true",
   "devDependencies": {
-    "@types/mocha": "^10.0.0",
+    "@types/mocha": "^10.0.2",
     "@types/node": "20.x",
-    "@typescript-eslint/eslint-plugin": "^6.6.0",
-    "@typescript-eslint/parser": "^6.6.0",
-    "eslint": "^8.49.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.5",
+    "@typescript-eslint/parser": "^6.7.5",
+    "eslint": "^8.51.0",
     "mocha": "^10.1.0",
     "typescript": "^5.2.2"
   }

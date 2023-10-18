@@ -120,11 +120,61 @@ export function ipv4Unwrap(b: Buffer) {
     };
 }
 
-export function pcapCreate(name: string) {
-    const fd = fs.openSync(name, "w");
-    fs.writeSync(fd, pcapGlobalHeader());
+export function pcapCreate(name: string): WriteablePcap {
+    const fd = fs.createWriteStream(name);
 
-    return fd;
+    const w = new FileWriteablePcap(fd);
+    w.write(pcapGlobalHeader());
+
+    return w;
+}
+
+export interface WriteablePcap {
+    /**
+     * Schedule buffer to be written to pcap file.
+     * Note that this returns imediatelly.
+     * @param b data
+     */
+    write(b: Buffer): void;
+
+    /**
+     * Closes the pcap file. This is async since there may still be unwritten data.
+     */
+    close(): Promise<void>;
+}
+
+class FileWriteablePcap implements WriteablePcap {
+    f: fs.WriteStream;
+    p: Promise<void> = Promise.resolve();
+
+    constructor(f: fs.WriteStream) {
+        this.f = f;
+    }
+
+    async close(): Promise<void> {
+        return new Promise<void>((success, error) => {
+            this.f.close((err) => {
+                if (err) {
+                    error(err);
+                } else {
+                    success();
+                }
+            });
+        });
+    }
+
+    write(b: Buffer): void {
+        const wp = new Promise<void>((success) => {
+            if (this.f.write(b)) {
+                success();
+            } else {
+                this.f.once('drain', success);
+            }
+        });
+
+        // chaining write promises
+        this.p = this.p.then(() => wp);
+    }
 }
 
 export function readBuffer(fd: number, size: number) {
@@ -145,12 +195,12 @@ export function pcapOpen(name: string) {
     return fd;
 }
 
-export function pcapAppend(fd: number, b: Buffer, timestampSec?: number) {
+export function pcapAppend(fd: WriteablePcap, b: Buffer, timestampSec?: number) {
     if (timestampSec === undefined) {
         timestampSec = new Date().getTime() / 1000;
     }
-    fs.writeSync(fd, pcapPacketHeader(timestampSec, b.length));
-    fs.writeSync(fd, b);
+    fd.write(pcapPacketHeader(timestampSec, b.length));
+    fd.write(b);
 
     return fd;
 }

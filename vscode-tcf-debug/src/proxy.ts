@@ -2,6 +2,7 @@
 Copyright (C) 2023 Intel Corporation
 SPDX-License-Identifier: MIT
 */
+/* eslint no-console: "off" */
 import * as net from "net";
 import { ipv4Header, pcapAppend, pcapClose, pcapCreate } from "./tcf-all";
 
@@ -55,7 +56,8 @@ var server = net.createServer(function (socket) {
         console.log("Disconnecting");
         socket.end();
         console.log("Closing pcap file");
-        pcapClose(pcapFile);
+        pcapFile.close()
+            .catch(e => console.log(e));
     });
 
     {
@@ -91,7 +93,8 @@ var server = net.createServer(function (socket) {
         proxy.end();
 
         console.log("Closing pcap file");
-        pcapClose(pcapFile);
+        pcapFile.close()
+            .catch(e => console.log(e));
     });
 });
 
