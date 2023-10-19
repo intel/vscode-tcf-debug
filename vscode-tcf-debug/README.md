@@ -70,6 +70,11 @@ but you can also manually configure the following parameters (default values sho
 
 ## Release Notes
 
+### 0.2.4
+
+* Adds disassembly support for stack trace
+* Slightly faster stack trace loading (if CodeArea is present in stack context)
+
 ### 0.2.3
 
 * Validates all TCF responses in order to be complaint with TCF specs

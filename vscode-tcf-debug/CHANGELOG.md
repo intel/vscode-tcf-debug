@@ -3,6 +3,7 @@
 ### 0.2.4
 
 * Adds disassembly support for stack trace
+* Slightly faster stack trace loading (if CodeArea is present in stack context)
 
 ### 0.2.3
 
