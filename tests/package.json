@@ -1,0 +1,49 @@
+{
+  "name": "tests",
+  "description": "TCF tests",
+  "displayName": "Public Tests",
+  "publisher": "Intel",
+  "version": "0.2.4",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.79.0"
+  },
+  "author": "ebold",
+  "contributors": [
+    {
+      "name": "ebold",
+      "email": "emilian.bold@intel.com"
+    },
+    {
+      "name": "oostoia",
+      "email": "ovidiu.ostoia@intel.com"
+    },
+    {
+      "name": "alicesto",
+      "email": "alice.stoian@intel.com"
+    }
+  ],
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "preunittest": "npm run compile",
+    "unittest": "npx mocha ./out/test/unit/suite",
+    "coverage": "npx nyc --temp-dir tests/.nyc_output --silent npx mocha ./out/test/unit/suite && npx nyc --temp-dir tests/.nyc_output report --reporter=cobertura --reporter=text --report-dir tests/coverage"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.1",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^6.1.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.46.0",
+    "mocha": "^10.2.0",
+    "nyc": "^15.1.0",
+    "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "@vscode/debugadapter": "^1.61.0",
+    "@vscode/debugprotocol": "^1.61.0",
+    "vscode-tcf-debug": "file:../vscode-tcf-debug"
+  }
+}
