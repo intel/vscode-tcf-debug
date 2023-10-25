@@ -30,6 +30,7 @@ import { promises } from 'fs';
 import { LifetimeDebugSession } from './lifetimeDebugSession';
 import * as validateLauchRequestArguments from './validators/validate-TCFLaunchRequestArguments';
 import { DisassembleDisassemblyCommand, DisassemblyParameters, GetCapabilitiesDisassemblyCommand } from './tcf/disassembly';
+import { MockFlags } from './mocksocket';
 
 //see package.json configurationAttributes
 export interface TCFLaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
@@ -37,6 +38,7 @@ export interface TCFLaunchRequestArguments extends DebugProtocol.LaunchRequestAr
 	port?: number;
 	record?: string;
 	playback?: string;
+	playbackFlag?: MockFlags;
 	timeout?: number;
 	debugTCFMessages?: boolean;
 	breakpointPrefix?: string;
@@ -464,7 +466,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		}
 		if (args.playback) {
 			this.tcfLogger.setPrefix("⚠️️️⏪⚠️️");
-			this.tcfClient.playback(args.playback);
+			this.tcfClient.playback(args.playback, args.playbackFlag);
 		} else {
 			this.tcfLogger.setPrefix("");
 

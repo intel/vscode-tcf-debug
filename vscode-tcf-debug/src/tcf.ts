@@ -11,7 +11,7 @@ import { QueryCommand } from './tcf/contextquery';
 import * as net from "net";
 import { TCFError, TCFErrorCodes } from './tcf/error';
 import { WriteablePcap, ipv4Header, pcapAppend, pcapClose } from './pcap';
-import { MockTCFSocket, Sockety } from './mocksocket';
+import { MockFlags, MockTCFSocket, Sockety } from './mocksocket';
 
 export interface TCFLogger {
     //TCF message sent to server
@@ -53,13 +53,14 @@ type PromiseResult = { success: PromiseSuccess<any>, error: PromiseError<any>, p
 
 const DEFAULT_COMMAND_TIMEOUT_MS = 10 * 1000; //10 seconds
 
-const PCAP_LOCALHOST = [127, 0, 0, 1];
-const PCAP_OTHER_HOST = [127, 0, 0, 2];
+export const PCAP_LOCALHOST = [127, 0, 0, 1];
+export const PCAP_OTHER_HOST = [127, 0, 0, 2];
 export abstract class AbstractTCFClient {
     console: TCFLogger;
     contextInfo: { [key: string]: TCFContextData } = {};
     pcapFile: WriteablePcap | null = null;
     playbackPath: string | null = null;
+    playbackFlags: MockFlags = {};
     tokenIdGenerator: SimpleCommandStamper;
     commandTimeout: number = DEFAULT_COMMAND_TIMEOUT_MS;
 
@@ -85,8 +86,9 @@ export abstract class AbstractTCFClient {
         this.pcapFile = fd;
     }
 
-    playback(path: string) {
+    playback(path: string, flags: MockFlags = {}) {
         this.playbackPath = path;
+        this.playbackFlags = flags;
     }
 
     protected abstract onEvent(service: string, event: string, datas: Buffer[]): void;
@@ -374,7 +376,7 @@ export abstract class AbstractTCFClient {
     }
 
     rawConnect(host: string, port: number): Promise<any> {
-        const socket = this.playbackPath ? new MockTCFSocket(this.playbackPath) : new net.Socket();
+        const socket = this.playbackPath ? new MockTCFSocket(this.playbackPath, this.playbackFlags) : new net.Socket();
         this.socket = socket;
 
         let connectSuccess: ((v: any) => void);
@@ -480,6 +482,9 @@ export abstract class AbstractTCFClient {
                             if (z) {
                                 this.console.received(`⬅️ Parsing async result ${resultTokenStr}`);
                                 z.parseResponse(resultRest, z.success, z.error);
+                            } else {
+                                this.console.error(`Received unexpected response. No command with this token was sent: ${resultTokenStr}`);
+                                //TODO: Other alternatives on unexpected replies would be to just disconnect or throw and error here.
                             }
                         }
 

@@ -15,6 +15,18 @@ export interface Sockety {
     setKeepAlive(keep: boolean): void;
 }
 
+export interface MockFlags {
+    /**
+     * The mock socket is not strict about ordering. Most replies are delayed until
+     * a command actually comes in. This is designed to accomodate timing variations in how
+     * the code may invoke commands.
+     *
+     * If this flag is `true` it consumes events and replies eagerly. This may break
+     * most tests but may also be preferable in other situations.
+     */
+    consumeEventsRepliesEagerly?: boolean;
+}
+
 const MOCK_SOCKET_READ_DELAY = 50; //milliseconds
 //TODO: The mock socket should use timestamps and try to simulate the delay between messages too!
 export class MockTCFSocket implements Sockety {
@@ -23,6 +35,7 @@ export class MockTCFSocket implements Sockety {
     dataHandler: (arg: any) => void = () => { };
 
     fd: number;
+    flags: MockFlags;
 
     sentCache: TimestampedBuffer[] = [];
     receiveCache: TimestampedBuffer[] = [];
@@ -35,9 +48,10 @@ export class MockTCFSocket implements Sockety {
 
     timer: NodeJS.Timeout | null = null;
 
-    constructor(path: string) {
+    constructor(path: string, flags: MockFlags) {
         this.fd = pcapOpen(path);
         this.activeServices.add("Locator"); //the Locator service is always active since it has the heartbeat event. Possibly more services will be required here...
+        this.flags = flags;
     }
 
     //@returns the new-old token pair to use (for remapping). If old token is undefined, not equal.
@@ -88,6 +102,13 @@ export class MockTCFSocket implements Sockety {
                 this.receiveCache.splice(i, 1);
                 return consume;
             }
+        }
+
+        //if we got here then we may still have (broken) replies, just push one
+        if (this.flags.consumeEventsRepliesEagerly && this.receiveCache.length > 0) {
+            const b = this.receiveCache[0].data;
+            this.receiveCache.splice(0, 1); //remove 1st element
+            return b;
         }
 
         return null;
