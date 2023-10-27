@@ -8,34 +8,32 @@ import { asNullable, asString, asStringArray, handleError, handleErrorBuffer, Pr
 import * as validateValueProperties from './validators/validate-ValueProperties';
 import * as validateExpressionsContextData from './validators/validate-ExpressionsContextData';
 
-let tokenCounter = 0;
-
 abstract class ExpressionsCommand<T> extends SimpleCommand<T> {
     constructor() {
-        super(tokenCounter++);
+        super();
     }
 
     service(): string {
         return "Expressions";
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}`;
+    debugDescription(tokenID: number): string {
+        return `${this.service()}/${tokenID}`;
     }
 
 }
 
 abstract class ExpressionsValidatingCommand<T> extends ValidatingCommand<T> {
     constructor() {
-        super(tokenCounter++);
+        super();
     }
 
     service(): string {
         return "Expressions";
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}`;
+    debugDescription(tokenID: number): string {
+        return `${this.service()}/${tokenID}`;
     }
 
 }
@@ -49,8 +47,8 @@ export class GetChildrenExpressionCommand extends ExpressionsValidatingCommand<s
         this.parentContextID = parentContextID;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.arguments();
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.arguments();
     }
 
     command(): string {
@@ -111,8 +109,8 @@ export class EvaluateExpressionsCommand extends ExpressionsCommand<EvaluateResul
         this.expressionID = expressionID;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.arguments();
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.arguments();
     }
 
     command(): string {
@@ -183,8 +181,8 @@ export class CreateExpressionsCommand extends ExpressionsValidatingCommand<strin
         this.expression = expression;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.parentContextID + "/" + this.expression;
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.parentContextID + "/" + this.expression;
     }
 
     command(): string {
@@ -195,8 +193,8 @@ export class CreateExpressionsCommand extends ExpressionsValidatingCommand<strin
         return undefined;
     }
 
-    toBuffer(): Buffer {
-        return toBuffer(["C", this.token(), this.service(), this.command(),
+    toBuffer(token: string): Buffer {
+        return toBuffer(["C", token, this.service(), this.command(),
             JSON.stringify(this.parentContextID), JSON.stringify(this.language), JSON.stringify(this.expression)],
             this.arguments());
     }
@@ -217,8 +215,8 @@ export class CreateExpressionInScopeCommand extends ExpressionsValidatingCommand
         this.expression = expression;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.scope + "/" + this.expression;
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.scope + "/" + this.expression;
     }
 
     command(): string {
@@ -228,8 +226,8 @@ export class CreateExpressionInScopeCommand extends ExpressionsValidatingCommand
         return undefined;
     }
 
-    toBuffer(): Buffer {
-        return toBuffer(["C", this.token(), this.service(), this.command(),
+    toBuffer(token: string): Buffer {
+        return toBuffer(["C", token, this.service(), this.command(),
             JSON.stringify(this.scope), JSON.stringify(this.expression)]);
     }
 
@@ -267,8 +265,8 @@ export class GetContextExpressionsCommand extends ExpressionsValidatingCommand<E
         this.contextID = contextID;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.contextID;
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.contextID;
     }
 
     command(): string {

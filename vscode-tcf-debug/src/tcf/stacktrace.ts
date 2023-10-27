@@ -6,34 +6,32 @@ import { TCFCodeAreaLineNumbers } from './linenumbers';
 import { asNullableArray, asStringNullableArray, handleError, handleErrorBuffer, PromiseError, PromiseSuccess, SimpleCommand, validateJSON, ValidatingCommand } from './tcfutils';
 import * as validateTCFContextDataStackTrace from './validators/validate-TCFContextDataStackTrace';
 
-let tokenCounter = 0;
-
 abstract class StackTraceCommand<T> extends SimpleCommand<T> {
     constructor() {
-        super(tokenCounter++);
+        super();
     }
 
     service(): string {
         return "StackTrace";
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}`;
+    debugDescription(tokenID: number): string {
+        return `${this.service()}/${tokenID}`;
     }
 
 }
 
 abstract class StackTraceValidatingCommand<T> extends ValidatingCommand<T> {
     constructor() {
-        super(tokenCounter++);
+        super();
     }
 
     service(): string {
         return "StackTrace";
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}`;
+    debugDescription(tokenID: number): string {
+        return `${this.service()}/${tokenID}`;
     }
 
 }
@@ -47,8 +45,8 @@ export class GetChildrenStackTraceCommand extends StackTraceValidatingCommand<st
         this.parentContextId = parentContextId;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.arguments();
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.arguments();
     }
 
     command(): string {
@@ -100,8 +98,8 @@ export class GetContextStackTraceCommand extends StackTraceCommand<TCFContextDat
         this.contextIDs = contextIDs;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.arguments().join("+");
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.arguments().join("+");
     }
 
     command(): string {

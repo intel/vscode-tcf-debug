@@ -131,23 +131,17 @@ export type Validator = (json: any) => boolean;
 export type RuntimeCaster<T> = (json: any) => T;
 
 export abstract class SimpleCommand<T> implements TCFCommand {
-    protected tokenID: number;
 
-    constructor(id: number) {
-        this.tokenID = id;
+    constructor() {
     }
 
-    abstract token(): string;
+    abstract debugDescription(tokenID: number): string;
     abstract service(): string;
     abstract command(): string;
     abstract arguments(): any;
 
-    setTokenID(id: number) {
-        this.tokenID = id;
-    }
-
-    toBuffer(): Buffer {
-        return toBuffer(["C", this.token(), this.service(), this.command()], this.arguments());
+    toBuffer(token: string): Buffer {
+        return toBuffer(["C", token, this.service(), this.command()], this.arguments());
     }
 
     resultPromise(responseAll: Buffer[]): Promise<T> {

@@ -25,16 +25,16 @@ export interface TCFLogger {
 
 //XXX: This could also be a lifecycle handler with preSend method
 export interface SimpleCommandStamper {
-    setTokenID(c: SimpleCommand<any>): void;
+    createToken(c: SimpleCommand<any>): string;
 }
 
 /**
  * Incrementally sets token ID per command. Each TCF service gets a separate counter starting with 0.
  */
-export class DefaultCommandStamper implements SimpleCommandStamper {
+export abstract class AbstractCommandStamper implements SimpleCommandStamper {
     counters: Map<String, number> = new Map();
 
-    setTokenID(command: SimpleCommand<any>): void {
+    createToken(command: SimpleCommand<any>): string {
         const service = command.service();
         let id = this.counters.get(service);
         if (id === undefined) {
@@ -44,7 +44,21 @@ export class DefaultCommandStamper implements SimpleCommandStamper {
         }
         this.counters.set(service, id);
 
-        command.setTokenID(id);
+        return this.createTokenWithID(command, id);
+    }
+
+    protected abstract createTokenWithID(command: SimpleCommand<any>, id: number): string;
+}
+
+export class DebugCommandStamper extends AbstractCommandStamper {
+    protected createTokenWithID(command: SimpleCommand<any>, id: number) {
+        return command.debugDescription(id);
+    }
+}
+
+export class SmallCommandStamper extends AbstractCommandStamper {
+    protected createTokenWithID(command: SimpleCommand<any>, id: number): string {
+        return `${command.service()}/${id}`;
     }
 }
 
@@ -312,13 +326,13 @@ export abstract class AbstractTCFClient {
     }
 
     sendCommand<T>(c: SimpleCommand<T>): Promise<T> {
-        this.tokenIdGenerator.setTokenID(c);
+        const token = this.tokenIdGenerator.createToken(c);
 
         var promiseconnectSuccess = new Promise((success, error) => {
-            this.addAsync(c.token(), { success, error, parseResponse: c.result.bind(c) });
+            this.addAsync(token, { success, error, parseResponse: c.result.bind(c) });
         });
 
-        this.send(c);
+        this.send(c.toBuffer(token));
 
         const self = this;
         let timer: NodeJS.Timeout;
@@ -327,10 +341,10 @@ export abstract class AbstractTCFClient {
             promiseconnectSuccess,
             new Promise((s, err) => {
                 function cleanUp() {
-                    self.console.error("Command timeout " + c.token());
+                    self.console.error("Command timeout " + token);
 
-                    self.deleteAsync(c.token());
-                    err(new TimeoutError(`timeout for ${c.token()}`));
+                    self.deleteAsync(token);
+                    err(new TimeoutError(`timeout for ${token}`));
                 }
 
                 timer = setTimeout(cleanUp, this.commandTimeout);
@@ -338,10 +352,7 @@ export abstract class AbstractTCFClient {
         ]) as Promise<T>).finally(() => clearTimeout(timer));
     }
 
-    private send(c: SimpleCommand<any> | SimpleEvent) {
-        const rawHttpRequest = //'GET / HTTP/1.1\r\nHost: localhost\r\n\r\n' +
-            c.toBuffer();//.toString();
-
+    private send(rawHttpRequest: Buffer) {
         this.console.sent(`➡️ Sending ${rawHttpRequest.toString()}`);
 
         if (this.pcapFile !== null) {
@@ -360,7 +371,7 @@ export abstract class AbstractTCFClient {
 
     async handshake() {
         const hello = new HelloLocatorEvent();
-        this.send(hello);
+        this.send(hello.toBuffer());
         await this.waitEvent(hello.service(), hello.event()); //using the hello methods to avoid hardcoding the service/event names
 
         const contexts = await this.sendCommand(new QueryCommand("*"));

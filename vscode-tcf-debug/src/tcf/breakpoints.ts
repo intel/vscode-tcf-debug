@@ -14,35 +14,32 @@ export function asBreakpointStatus(result: any): BreakpointStatus {
     return validateJSON(result, validateBreakpointStatus) as BreakpointStatus; //type assertion OK
 }
 
-//global token counter
-let tokenCounter = 0;
-
 abstract class BreakpointsCommand<T> extends SimpleCommand<T> {
     constructor() {
-        super(tokenCounter++);
+        super();
     }
 
     service(): string {
         return "Breakpoints";
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}`;
+    debugDescription(tokenID : number): string {
+        return `${this.service()}/${tokenID}`;
     }
 
 }
 
 abstract class BreakpointsValidatingCommand<T> extends ValidatingCommand<T> {
     constructor() {
-        super(tokenCounter++);
+        super();
     }
 
     service(): string {
         return "Breakpoints";
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}`;
+    debugDescription(tokenID : number): string {
+        return `${this.service()}/${tokenID}`;
     }
 
 }
@@ -86,8 +83,8 @@ export class SetBreakpointsCommand extends BreakpointsEmptyCommand {
         this.args = args;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.argumentsHash();
+    debugDescription(tokenID : number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.argumentsHash();
     }
 
     command(): string {
@@ -127,8 +124,8 @@ export class AddBreakpointsCommand extends BreakpointsEmptyCommand {
         this.breakpoint = breakpoint;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.breakpoint.ID;
+    debugDescription(tokenID : number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.breakpoint.ID;
     }
 
     command(): string {
@@ -150,8 +147,8 @@ export class RemoveBreakpointsCommand extends BreakpointsEmptyCommand {
         this.ids = breakpointIds;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.ids.join("+");
+    debugDescription(tokenID : number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.ids.join("+");
     }
 
     command(): string {
@@ -194,8 +191,8 @@ export class GetIDsBreakpointsCommand extends BreakpointsValidatingCommand<strin
         super();
     }
 
-    token(): string {
-        return super.token() + "/" + this.command();
+    debugDescription(tokenID : number): string {
+        return super.debugDescription(tokenID) + "/" + this.command();
     }
 
     command(): string {
@@ -221,8 +218,8 @@ export class GetPropertiesBreakpointsCommand extends BreakpointsValidatingComman
         this.breakpointID = breakpointID;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.arguments();
+    debugDescription(tokenID : number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.arguments();
     }
 
     command(): string {
@@ -247,8 +244,8 @@ export class GetStatusBreakpointsCommand extends BreakpointsValidatingCommand<Br
         this.breakpointID = breakpointID;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.arguments();
+    debugDescription(tokenID : number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.arguments();
     }
 
     command(): string {

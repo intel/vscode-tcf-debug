@@ -128,36 +128,63 @@
             "required": [],
             "properties": {
               "host": {
-                "type": "string",
+                "default": "localhost",
                 "description": "(Remote) TCF agent host",
-                "default": "localhost"
+                "type": "string"
               },
               "port": {
-                "type": "number",
+                "default": 1534,
                 "description": "TCF connection port",
-                "default": 1534
+                "type": "number"
               },
               "record": {
-                "type": "string",
-                "description": "File path where TCF messages will be recorded into"
+                "description": "File path where TCF messages will be recorded into",
+                "type": "string"
               },
               "playback": {
-                "type": "string",
-                "description": "File path with recorded TCF message which will be used to replay TCF messages (host and port will be ignored)"
+                "description": "File path with recorded TCF message which will be used to replay TCF messages (host and port will be ignored)",
+                "type": "string"
+              },
+              "playbackFlag": {
+                "properties": {
+                  "consumeEventsRepliesEagerly": {
+                    "description": "The mock socket is not strict about ordering. Most replies are delayed until\na command actually comes in. This is designed to accomodate timing variations in how\nthe user / code may invoke commands.\n\nIf this flag is `true` it consumes events and replies eagerly. This may break\nmost scenarios but may also be preferable in other situations (eg. specific tests).",
+                    "type": "boolean"
+                  }
+                },
+                "type": "object"
               },
               "debugTCFMessages": {
-                "type": "boolean",
-                "description": "Show TCF messages in the debug console"
+                "description": "Show TCF messages in the debug console",
+                "type": "boolean"
               },
               "timeout": {
-                "type": "number",
+                "default": 10000,
                 "description": "Debug commands timeout (milliseconds)",
-                "default": 10000
+                "type": "number"
               },
               "pathMapper": {
-                "type": "string",
+                "default": "return function (path, context) { return path; }",
                 "description": "A Javascript function to map a local path to the debugger path",
-                "default": "return function (path, context) { return path; }"
+                "type": "string"
+              },
+              "internal": {
+                "properties": {
+                  "commandToken": {
+                    "default": "default",
+                    "description": "Normally TCF command tokens are very terse identifiers which make manually reading the TCF messages hard.\nIf this property is set to `debug` a more verbose command token is used which makes the reply easier to\nunderstand.",
+                    "enum": [
+                      "debug",
+                      "default"
+                    ],
+                    "type": "string"
+                  },
+                  "debugTCFMessages": {
+                    "description": "Show TCF messages in the debug console",
+                    "type": "boolean"
+                  }
+                },
+                "type": "object"
               }
             }
           }

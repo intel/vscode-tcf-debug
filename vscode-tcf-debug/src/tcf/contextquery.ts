@@ -4,19 +4,17 @@ SPDX-License-Identifier: MIT
 */
 import { ValidatingCommand, asStringArray } from './tcfutils';
 
-let tokenCounter = 0;
-
 //see https://download.eclipse.org/tools/tcf/tcf-docs/TCF%20Service%20-%20Context%20Query.html#CmdQuery
 export class QueryCommand extends ValidatingCommand<string[]> {
     query: string;
 
     constructor(q: string) {
-        super(tokenCounter++);
+        super();
         this.query = q;
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}` + "/" + this.command() + "/" + this.query;
+    debugDescription(tokenID: number): string {
+        return `${this.service()}/${tokenID}` + "/" + this.command() + "/" + this.query;
     }
 
     service(): string {

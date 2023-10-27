@@ -4,15 +4,13 @@ SPDX-License-Identifier: MIT
 */
 import { ValidatingCommand, asString } from './tcfutils';
 
-let tokenCounter = 0;
-
 abstract class DiagnosticsCommand<T> extends ValidatingCommand<T> {
     constructor() {
-        super(tokenCounter++);
+        super();
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}`;
+    debugDescription(tokenID: number): string {
+        return `${this.service()}/${tokenID}`;
     }
 
     service(): string {

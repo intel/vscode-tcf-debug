@@ -19,10 +19,10 @@ export interface MockFlags {
     /**
      * The mock socket is not strict about ordering. Most replies are delayed until
      * a command actually comes in. This is designed to accomodate timing variations in how
-     * the code may invoke commands.
+     * the user / code may invoke commands.
      *
      * If this flag is `true` it consumes events and replies eagerly. This may break
-     * most tests but may also be preferable in other situations.
+     * most scenarios but may also be preferable in other situations (eg. specific tests).
      */
     consumeEventsRepliesEagerly?: boolean;
 }

@@ -16,20 +16,14 @@ SPDX-License-Identifier: MIT
 /* eslint no-console: "off" */
 
 import {
-    DefaultCommandStamper, InstanceStatusData,
+    InstanceStatusData,
     SimpleCommandStamper, TCFClient, TCFLogger,
     ContextSuspendedData,
-    SimpleCommand
+    SimpleCommand,
+    DebugCommandStamper
 } from 'vscode-tcf-debug/out/tcf-all';
 import { TCFDebugSession, } from 'vscode-tcf-debug/out/debugProvider';
 import { DebugProtocol } from '@vscode/debugprotocol';
-
-export class NoOpCommandStamper implements SimpleCommandStamper {
-    setTokenID(c: SimpleCommand<any>): void {
-        //nothig. by design.
-    }
-
-}
 
 export function sleep(time: number) {
     return new Promise((success, error) => {
@@ -70,7 +64,7 @@ export class TestTCFClient extends TCFClient {
     suspended = new Set<string>();
 
     constructor(log: boolean = true) {
-        super(log ? logger : nologger, new DefaultCommandStamper());
+        super(log ? logger : nologger, new DebugCommandStamper());
     }
 
     protected onBreakpoint(breakpointID: string, status: InstanceStatusData[]): void {

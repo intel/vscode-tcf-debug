@@ -5,34 +5,32 @@ SPDX-License-Identifier: MIT
 import { PromiseError, PromiseSuccess, SimpleCommand, ValidatingCommand, asString, asStringNullableArray, handleError, handleErrorBuffer, responseLengthAbout, toBuffer, validateJSON } from "./tcfutils";
 import * as validateMemoryResult from './validators/validate-MemoryResult';
 
-let tokenCounter = 0;
-
 abstract class MemoryCommand<T> extends SimpleCommand<T> {
     constructor() {
-        super(tokenCounter++);
+        super();
     }
 
     service(): string {
         return "Memory";
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}`;
+    debugDescription(tokenID: number): string {
+        return `${this.service()}/${tokenID}`;
     }
 
 }
 
 abstract class MemoryValidatingCommand<T> extends ValidatingCommand<T> {
     constructor() {
-        super(tokenCounter++);
+        super();
     }
 
     service(): string {
         return "Memory";
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}`;
+    debugDescription(tokenID: number): string {
+        return `${this.service()}/${tokenID}`;
     }
 
 }
@@ -101,8 +99,8 @@ export class GetMemoryCommand extends MemoryCommand<MemoryResult> {
         return undefined;
     }
 
-    toBuffer(): Buffer {
-        return toBuffer(["C", this.token(), this.service(), this.command(),
+    toBuffer(token: string): Buffer {
+        return toBuffer(["C", token, this.service(), this.command(),
             JSON.stringify(this.contextID), JSON.stringify(this.address), JSON.stringify(this.wordSize),
             JSON.stringify(this.byteCount), JSON.stringify(this.mode)], undefined);
     }

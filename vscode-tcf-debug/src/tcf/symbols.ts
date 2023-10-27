@@ -5,19 +5,17 @@ SPDX-License-Identifier: MIT
 import { asString, asStringNullableArray, toBuffer, validateJSON, ValidatingCommand } from './tcfutils';
 import * as validateTCFSymbolContextData from './validators/validate-TCFSymbolContextData';
 
-let tokenCounter = 0;
-
 abstract class SymbolsCommand<T> extends ValidatingCommand<T> {
     constructor() {
-        super(tokenCounter++);
+        super();
     }
 
     service(): string {
         return "Symbols";
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}`;
+    debugDescription(tokenID: number): string {
+        return `${this.service()}/${tokenID}`;
     }
 }
 
@@ -32,8 +30,8 @@ export class FindByAddrSymbolsCommand extends SymbolsCommand<string> {
         this.address = address;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.contextID + "+" + this.address;
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.contextID + "+" + this.address;
     }
 
     command(): string {
@@ -44,8 +42,8 @@ export class FindByAddrSymbolsCommand extends SymbolsCommand<string> {
         return undefined;
     }
 
-    toBuffer(): Buffer {
-        return toBuffer(["C", this.token(), this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.address)], undefined);
+    toBuffer(token: string): Buffer {
+        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.address)], undefined);
     }
 
     override cast(json: any): string {
@@ -123,8 +121,8 @@ export class GetContextSymbolsCommand extends SymbolsCommand<TCFSymbolContextDat
         this.contextID = contextID;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.contextID;
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.contextID;
     }
 
     command(): string {
@@ -152,8 +150,8 @@ export class GetChildrenSymbolsCommand extends SymbolsCommand<string[] | null> {
         this.contextID = contextID;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.contextID;
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.contextID;
     }
 
     command(): string {

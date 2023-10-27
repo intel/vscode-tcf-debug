@@ -14,7 +14,7 @@ import {
 } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import {
-	DefaultCommandStamper, TCFLogger, TCFClient, InstanceStatusData, pcapCreate,
+	TCFLogger, TCFClient, InstanceStatusData, pcapCreate,
 	GetStatusBreakpointsCommand, GetPropertiesBreakpointsCommand, GetIDsBreakpointsCommand,
 	TCFTypeClass,
 	MapToMemoryLineNumbersCommand, MapToSourceLineNumbersCommand,
@@ -25,6 +25,8 @@ import {
 	TimeoutError,
 	JSONValidationError,
 	ClientVariable,
+	DebugCommandStamper,
+	SmallCommandStamper,
 } from './tcf-all';
 import { promises } from 'fs';
 import { LifetimeDebugSession } from './lifetimeDebugSession';
@@ -32,17 +34,58 @@ import * as validateLauchRequestArguments from './validators/validate-TCFLaunchR
 import { DisassembleDisassemblyCommand, DisassemblyParameters, GetCapabilitiesDisassemblyCommand } from './tcf/disassembly';
 import { MockFlags } from './mocksocket';
 
-//see package.json configurationAttributes
+export interface InternalLaunchArguments {
+	/**
+	 * Show TCF messages in the debug console
+	 */
+	debugTCFMessages?: boolean;
+	/**
+	 * Normally TCF command tokens are very terse identifiers which make manually reading the TCF messages hard.
+	 * If this property is set to `debug` a more verbose command token is used which makes the reply easier to
+	 * understand.
+	 *
+	 * @default "default"
+	 */
+	commandToken?: "debug" | "default";
+}
+
+//see https://code.visualstudio.com/api/references/contribution-points#contributes.debuggers
+//see package.json configurationAttributes which is the JSON schema (aka TCFLaunchRequestArguments.json) for this object
+//Note that '$ref' is not supported by vscode so it must be generated like this (--refs = false):
+// npx typescript-json-schema --required ./tsconfig.json --refs false TCFLaunchRequestArguments  -o src/schema/TCFLaunchRequestArguments.json
 export interface TCFLaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
+	/**
+	 * (Remote) TCF agent host
+	 * @default "localhost"
+	 */
 	host?: string;
+	/**
+	 * TCF connection port
+	 * @default 1534
+	 */
 	port?: number;
+	/** File path where TCF messages will be recorded into */
 	record?: string;
+	/** File path with recorded TCF message which will be used to replay TCF messages (host and port will be ignored) */
 	playback?: string;
 	playbackFlag?: MockFlags;
+	/**
+	 * Debug commands timeout (milliseconds)
+	 * @default 10000
+	 */
 	timeout?: number;
+	/**
+	 * Show TCF messages in the debug console
+	 * @deprecated use internal.debugTCFMessages
+	 */
 	debugTCFMessages?: boolean;
 	breakpointPrefix?: string;
+	/**
+	 * A Javascript function to map a local path to the debugger path
+	 * @default "return function (path, context) { return path; }"
+	 */
 	pathMapper?: string;
+	internal?: InternalLaunchArguments;
 }
 
 export function asLaunchRequestArguments(result: any): TCFLaunchRequestArguments {
@@ -285,8 +328,20 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		outer: TCFDebugSession;
 
 		constructor(logger: TCFLogger, outer: TCFDebugSession) {
-			super(logger, new DefaultCommandStamper());
+			super(logger, new SmallCommandStamper());
 			this.outer = outer;
+		}
+
+		setCommandToken(kind: string) {
+			switch (kind) {
+				case "debug":
+					this.tokenIdGenerator = new DebugCommandStamper();
+					break;
+				default:
+					//we just leave the default (and maybe create another instance here...)
+					this.tokenIdGenerator = new SmallCommandStamper();
+					break;
+			}
 		}
 
 		//TODO: this should return boolean and let the caller present the info
@@ -471,7 +526,10 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			this.tcfLogger.setPrefix("");
 
 		}
-		this.tcfLogger.setDebugTCFMessages(args.debugTCFMessages || DEFAULT_DEBUG_TCF_MESSAGES);
+		this.tcfLogger.setDebugTCFMessages(args.debugTCFMessages || (args.internal?.debugTCFMessages || DEFAULT_DEBUG_TCF_MESSAGES));
+		if (args.internal?.commandToken) {
+			this.tcfClient.setCommandToken(args.internal.commandToken);
+		}
 		try {
 			await this.tcfClient.connect(host, port);
 

@@ -4,19 +4,17 @@ SPDX-License-Identifier: MIT
 */
 import { SimpleCommand, SimpleEvent } from './tcfutils';
 
-let tokenCounter = 0;
-
 abstract class LocatorCommand<T> extends SimpleCommand<T> {
     constructor() {
-        super(tokenCounter++);
+        super();
     }
 
     service(): string {
         return "Locator";
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}`;
+    debugDescription(tokenID: number): string {
+        return `${this.service()}/${tokenID}`;
     }
 
 }

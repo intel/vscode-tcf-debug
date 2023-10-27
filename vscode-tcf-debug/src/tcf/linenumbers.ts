@@ -5,20 +5,18 @@ SPDX-License-Identifier: MIT
 import { ValidatingCommand, asNullableArray, toBuffer, validateJSON } from './tcfutils';
 import * as validateTCFCodeAreaLineNumbers from './validators/validate-TCFCodeAreaLineNumbers';
 
-let tokenCounter = 0;
-
 abstract class LineNumbersCommand<T> extends ValidatingCommand<T> {
 
     constructor() {
-        super(tokenCounter++);
+        super();
     }
 
     service(): string {
         return "LineNumbers";
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}`;
+    debugDescription(tokenID: number): string {
+        return `${this.service()}/${tokenID}`;
     }
 
 }
@@ -62,8 +60,8 @@ export class MapToSourceLineNumbersCommand extends LineNumbersCommand<TCFCodeAre
         this.endAddress = endAddress;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + [this.contextID, this.startAddress, this.endAddress].map(x => "" + x).join("+");
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + [this.contextID, this.startAddress, this.endAddress].map(x => "" + x).join("+");
     }
 
     command(): string {
@@ -74,8 +72,8 @@ export class MapToSourceLineNumbersCommand extends LineNumbersCommand<TCFCodeAre
         return undefined;
     }
 
-    toBuffer(): Buffer {
-        return toBuffer(["C", this.token(), this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.startAddress), JSON.stringify(this.endAddress)], null);
+    toBuffer(token: string): Buffer {
+        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.startAddress), JSON.stringify(this.endAddress)], null);
     }
 
     override cast(json: any): TCFCodeAreaLineNumbers[] | null {
@@ -98,9 +96,9 @@ export class MapToMemoryLineNumbersCommand extends LineNumbersCommand<TCFCodeAre
         this.column = column;
     }
 
-    token(): string {
+    debugDescription(tokenID: number): string {
         //file expressly removed from token. too noisy
-        return super.token() + "/" + this.command() + "/" + [this.contextID, this.line, this.column].map(x => "" + x).join("+");
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + [this.contextID, this.line, this.column].map(x => "" + x).join("+");
     }
 
     command(): string {
@@ -111,8 +109,8 @@ export class MapToMemoryLineNumbersCommand extends LineNumbersCommand<TCFCodeAre
         return undefined;
     }
 
-    toBuffer(): Buffer {
-        return toBuffer(["C", this.token(), this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.file), JSON.stringify(this.line), JSON.stringify(this.column)], null);
+    toBuffer(token: string): Buffer {
+        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.file), JSON.stringify(this.line), JSON.stringify(this.column)], null);
     }
 
     override cast(json: any): TCFCodeAreaLineNumbers[] | null {

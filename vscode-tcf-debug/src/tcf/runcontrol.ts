@@ -7,8 +7,6 @@ import * as validateTCFStateData from './validators/validate-TCFStateData';
 import * as validateTCFContextData from './validators/validate-TCFContextData';
 import * as validateContextSuspendedData from './validators/validate-ContextSuspendedData';
 
-let tokenCounter = 0;
-
 //see https://download.eclipse.org/tools/tcf/tcf-docs/TCF%20Service%20-%20Run%20Control.html#CmdGetContext
 /* eslint-disable @typescript-eslint/naming-convention */
 export interface TCFContextData {
@@ -43,30 +41,30 @@ export function asTCFContextData(result: any): TCFContextData {
 
 abstract class RunControlCommand<T> extends SimpleCommand<T> {
     constructor() {
-        super(tokenCounter++);
+        super();
     }
 
     service(): string {
         return "RunControl";
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}`;
+    debugDescription(tokenID: number): string {
+        return `${this.service()}/${tokenID}`;
     }
 
 }
 
 abstract class RunControlValidatingCommand<T> extends ValidatingCommand<T> {
     constructor() {
-        super(tokenCounter++);
+        super();
     }
 
     service(): string {
         return "RunControl";
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}`;
+    debugDescription(tokenID: number): string {
+        return `${this.service()}/${tokenID}`;
     }
 
 }
@@ -95,8 +93,8 @@ export class SuspendRunControlCommand extends RunControlEmptyCommand {
         this.contextID = contextID;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.contextID;
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.contextID;
     }
 
     command(): string {
@@ -130,8 +128,8 @@ export class ResumeRunControlCommand extends RunControlEmptyCommand {
         this.mode = mode;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.contextID;
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.contextID;
     }
 
     command(): string {
@@ -142,11 +140,11 @@ export class ResumeRunControlCommand extends RunControlEmptyCommand {
         return undefined;
     }
 
-    toBuffer(): Buffer {
+    toBuffer(token: string): Buffer {
 
         const count = "1"; //doesn't matter, normal execution has no count
         //XXX: JSON stringifying the context ID is very important!
-        return toBuffer(["C", this.token(), this.service(), this.command(), JSON.stringify(this.contextID), this.mode.toString(), count], undefined);
+        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.contextID), this.mode.toString(), count], undefined);
     }
 }
 
@@ -159,8 +157,8 @@ export class GetContextRunControlCommand extends RunControlValidatingCommand<TCF
         this.contextID = contextID;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.contextID;
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.contextID;
     }
 
     command(): string {
@@ -185,8 +183,8 @@ export class GetChildrenRunControlCommand extends RunControlValidatingCommand<st
         this.parentContextID = parentContextID;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.arguments();
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.arguments();
     }
 
     command(): string {
@@ -197,9 +195,9 @@ export class GetChildrenRunControlCommand extends RunControlValidatingCommand<st
         return this.parentContextID;
     }
 
-    toBuffer(): Buffer {
+    toBuffer(token: string): Buffer {
         //this needs to be explicit since arguments can also be null and must be serialized as null
-        return toBuffer(["C", this.token(), this.service(), this.command()], this.arguments(), true);
+        return toBuffer(["C", token, this.service(), this.command()], this.arguments(), true);
     }
 
     override cast(json: any): string[] | null {
@@ -227,8 +225,8 @@ export class GetStateRunControlCommand extends RunControlCommand<TCFStateData> {
         this.contextID = contextID;
     }
 
-    token(): string {
-        return super.token() + "/" + this.command() + "/" + this.arguments();
+    debugDescription(tokenID: number): string {
+        return super.debugDescription(tokenID) + "/" + this.command() + "/" + this.arguments();
     }
 
     command(): string {

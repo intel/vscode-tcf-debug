@@ -6,12 +6,10 @@ import { ValidatingCommand, asNullableArray, toBuffer, validateJSON } from './tc
 import * as validateDisassemblyLine from './validators/validate-DisassemblyLine';
 import * as validateDisassemblyCapability from './validators/validate-DisassemblyCapability';
 
-let tokenCounter = 0;
-
 abstract class DisassemblyCommand<T> extends ValidatingCommand<T> {
 
     constructor() {
-        super(tokenCounter++);
+        super();
     }
 
     service(): string {
@@ -19,8 +17,8 @@ abstract class DisassemblyCommand<T> extends ValidatingCommand<T> {
 
     }
 
-    token(): string {
-        return `${this.service()}/${this.tokenID}`;
+    debugDescription(tokenID: number): string {
+        return `${this.service()}/${tokenID}`;
     }
 
 }
@@ -126,8 +124,8 @@ export class DisassembleDisassemblyCommand extends DisassemblyCommand<Disassembl
         return undefined;
     }
 
-    toBuffer(): Buffer {
-        return toBuffer(["C", this.token(), this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.startLocation), JSON.stringify(this.size), JSON.stringify(this.params)], null);
+    toBuffer(token: string): Buffer {
+        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.startLocation), JSON.stringify(this.size), JSON.stringify(this.params)], null);
     }
 
 } 
