@@ -81,8 +81,8 @@
     "typescript-json-schema": "^0.62.0"
   },
   "dependencies": {
-    "@vscode/debugadapter": "1.63.0",
-    "@vscode/debugprotocol": "1.63.0"
+    "@vscode/debugadapter": "1.64.0",
+    "@vscode/debugprotocol": "1.64.0"
   },
   "contributes": {
     "commands": [
