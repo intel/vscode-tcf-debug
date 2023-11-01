@@ -89,8 +89,7 @@ export function ipv4Header(b: Buffer, sourceIP: number[], destIP: number[]): Buf
     const PROTOCOL_TCP = 6;
     const PROTOCOL_ANY_LOCAL = 63;
     header.writeUint8(PROTOCOL_ANY_LOCAL, 8 + 1); //protocol
-    //TODO: compute checksum
-    header.writeUint16LE(0, 9 + 1); //bad checksum, always 0
+    header.writeUint16LE(0, 9 + 1); //0 checksum, initally, will be computed at the end
     //source IP address
     header.writeInt8(sourceIP[0], 12);
     header.writeInt8(sourceIP[1], 13);
@@ -102,7 +101,42 @@ export function ipv4Header(b: Buffer, sourceIP: number[], destIP: number[]): Buf
     header.writeInt8(destIP[2], 18);
     header.writeInt8(destIP[3], 19);
 
+    let checksum = ipv4Checksum(header);
+    header.writeUint16LE(checksum, 9 + 1);
+
     return header;
+}
+
+/**
+ * Computes the IPv4 header checksum.
+ *
+ * @param header the IP v4 header
+ * @returns the 16bit checksum
+ */
+function ipv4Checksum(header: Buffer) {
+    const MAX_32 = Math.pow(2, 32);
+    let checksum = 0;
+
+    let i = 0;
+    while (i < header.length - 1) {
+        const v = header.readUInt16LE(i);
+        checksum += v; //sum 16 bit value
+        checksum = checksum % MAX_32; //unsigned overflow
+
+        i += 2;
+    }
+    if (i < header.length) {
+        checksum += header.readUint8(i); //add last byte if odd header size
+        checksum = checksum % MAX_32; //unsigned overflow
+    }
+
+    while ((checksum >>> 16) > 0) {
+        checksum = (checksum >>> 16) + (checksum & 0xffff);
+    }
+
+    checksum = ((~checksum) >>> 0) & 0xffff; //this is just an unsigned negation but since JS does signed negation we apparently need to do all this
+
+    return checksum;
 }
 
 export function ipv4Unwrap(b: Buffer) {
