@@ -70,6 +70,10 @@ but you can also manually configure the following parameters (default values sho
 
 ## Release Notes
 
+### 0.2.5
+* Print an error to the user if a mismatched reply is sent by a non-compliant tcf agent
+* Improvements to our unit tests structure and added code coverage
+
 ### 0.2.4
 
 * Adds disassembly support for stack trace

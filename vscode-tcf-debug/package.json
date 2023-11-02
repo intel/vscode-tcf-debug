@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/intel-innersource/applications.vpu.tools.tcf-vscode-debug"
   },
-  "version": "0.2.4",
+  "version": "0.2.5",
   "license": "MIT",
   "engines": {
     "vscode": "^1.79.0"
