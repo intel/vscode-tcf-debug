@@ -4,6 +4,8 @@ SPDX-License-Identifier: MIT
 */
 import * as vscode from 'vscode';
 import { TCFDebugSession } from './debugProvider';
+import { NPUTaskProvider } from './taskProvider';
+import { checkForUpdates } from './updater';
 import { LoggingDebugSession } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 
@@ -17,11 +19,17 @@ export function activate(context: vscode.ExtensionContext) {
 	//temporary migration message
 	context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('vpu', new VPURenameDebugAdapterFactory()));
 
+	// task-provider
+	context.subscriptions.push(vscode.tasks.registerTaskProvider('npu', new NPUTaskProvider()));
+
 	//this is handy because it can be used in launch.json to be expanded via ${command:timestamp} in eg. record pcap paths
 	context.subscriptions.push(vscode.commands.registerCommand('timestamp', () => {
 		return new Date().toISOString()
 			.replaceAll(":", "-"); //Windows does not like `:` in paths
 	}));
+
+	checkForUpdates(context.extension.packageJSON.version, latestVersion =>
+		vscode.window.showInformationMessage(`TCF Extension latest version is ${latestVersion} (you have ${context.extension.packageJSON.version})`));
 }
 
 export class VPURenameDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
