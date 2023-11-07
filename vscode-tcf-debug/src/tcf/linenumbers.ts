@@ -73,7 +73,7 @@ export class MapToSourceLineNumbersCommand extends LineNumbersCommand<TCFCodeAre
     }
 
     toBuffer(token: string): Buffer {
-        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.startAddress), JSON.stringify(this.endAddress)], null);
+        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.startAddress), JSON.stringify(this.endAddress)]);
     }
 
     override cast(json: any): TCFCodeAreaLineNumbers[] | null {
@@ -110,7 +110,7 @@ export class MapToMemoryLineNumbersCommand extends LineNumbersCommand<TCFCodeAre
     }
 
     toBuffer(token: string): Buffer {
-        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.file), JSON.stringify(this.line), JSON.stringify(this.column)], null);
+        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.file), JSON.stringify(this.line), JSON.stringify(this.column)]);
     }
 
     override cast(json: any): TCFCodeAreaLineNumbers[] | null {

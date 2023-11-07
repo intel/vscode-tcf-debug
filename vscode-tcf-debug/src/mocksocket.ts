@@ -3,7 +3,7 @@ Copyright (C) 2023 Intel Corporation
 SPDX-License-Identifier: MIT
 */
 import { ipv4Unwrap, pcapClose, pcapOpen, pcapRead, TimestampedBuffer } from "./pcap";
-import { join, split } from "./tcf/tcfutils";
+import { join, split, TCF_END_OF_PACKET_MARKER } from "./tcf/tcfutils";
 import assert = require("assert");
 
 export interface Sockety {
@@ -317,7 +317,7 @@ export class MockTCFSocket implements Sockety {
 
                     if (ipData.data.indexOf(Uint8Array.from([3, 1])) === -1) {
                         //bad serialization, append end of packet bytes
-                        ipData.data = Buffer.concat([ipData.data, Buffer.from(Uint8Array.from([3, 1]))]);
+                        ipData.data = Buffer.concat([ipData.data, TCF_END_OF_PACKET_MARKER]);
                     }
 
                     if (this.isCommand(ipData.data)) {

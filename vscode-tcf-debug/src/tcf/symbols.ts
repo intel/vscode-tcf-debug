@@ -43,7 +43,7 @@ export class FindByAddrSymbolsCommand extends SymbolsCommand<string> {
     }
 
     toBuffer(token: string): Buffer {
-        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.address)], undefined);
+        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.address)]);
     }
 
     override cast(json: any): string {

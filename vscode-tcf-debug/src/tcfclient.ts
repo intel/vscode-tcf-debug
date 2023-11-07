@@ -9,7 +9,7 @@ import { MapToSourceLineNumbersCommand, TCFCodeAreaLineNumbers } from "./tcf/lin
 import { asNullableTCFContextData, asTCFContextData, ContextSuspendedData, GetChildrenRunControlCommand, GetContextRunControlCommand, GetStateRunControlCommand, parseContextSuspended, TCFContextData, TCFStateData } from "./tcf/runcontrol";
 import { GetChildrenStackTraceCommand, GetContextStackTraceCommand, TCFContextDataStackTrace } from "./tcf/stacktrace";
 import { FindByAddrSymbolsCommand, GetContextSymbolsCommand, TCFTypeClass } from "./tcf/symbols";
-import { asArray, asNullableArray, asString, asStringArray, CancellationFunction, InterruptedError, parseResponse, responseLengthAbout, SimpleCommand, TCFPartialResultError } from "./tcf/tcfutils";
+import { asArray, asNullableArray, asString, asStringArray, CancellationFunction, EMPTY_BUFFER, InterruptedError, parseResponse, responseLengthAbout, SimpleCommand, TCFPartialResultError } from "./tcf/tcfutils";
 import { DefaultVariableHelper } from "./variables/helper";
 import { SymbolRawValueProvider } from "./variables/symbol";
 import { ClientVariable, SymbolNameProvider } from "./variables/types";
@@ -243,7 +243,7 @@ export abstract class TCFClient extends AbstractTCFClient {
      * @returns a list of buffers with the first 'error' buffer empty.
      */
     private static noError(buffers: Buffer[]): Buffer[] {
-        return [Buffer.from([])].concat(buffers);
+        return [EMPTY_BUFFER].concat(buffers);
     }
 
     //see https://download.eclipse.org/tools/tcf/tcf-docs/TCF%20Service%20-%20Run%20Control.html#Events

@@ -15,9 +15,12 @@ export function responseLengthAbout(n: number, buffers: Buffer[]): boolean {
     return (buffers.length === n || (buffers.length === (n + 1) && buffers[buffers.length - 1].length === 0));
 }
 
-export function toBuffer(words: string[], arg?: any | undefined, forceNullArg?: boolean): Buffer {
-    const separator = Buffer.from([0]);
+export const TCF_END_OF_PACKET_MARKER = Buffer.from([3, 1]);
+export const ZERO_BYTE = Buffer.from([0]);
+export const EMPTY_BUFFER = Buffer.from([]);
 
+export function toBuffer(words: string[], arg?: any): Buffer {
+    const separator = ZERO_BYTE;
     let buffers: Buffer[] = [];
     let first = true;
     for (const word of words) {
@@ -28,12 +31,12 @@ export function toBuffer(words: string[], arg?: any | undefined, forceNullArg?: 
         first = false;
     }
 
-    if (arg || forceNullArg) {
+    if (arg) {
         buffers.push(separator);
         buffers.push(Buffer.from(JSON.stringify(arg)));
     }
     buffers.push(separator);
-    buffers.push(Buffer.from([3, 1]));
+    buffers.push(TCF_END_OF_PACKET_MARKER);
 
     return Buffer.concat(buffers);
 }
@@ -54,9 +57,9 @@ export function split(b: Buffer, separator: Uint8Array = Uint8Array.from([0])): 
     return buffers;
 }
 
-export function join(b: Buffer[], separator: Buffer = Buffer.from([0])): Buffer {
+export function join(b: Buffer[], separator: Buffer = ZERO_BYTE): Buffer {
     if (b.length === 0) {
-        return Buffer.from([]);
+        return EMPTY_BUFFER;
     }
 
     let all = [b[0]];

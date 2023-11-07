@@ -4,12 +4,11 @@ SPDX-License-Identifier: MIT
 */
 /* eslint no-console: "off" */
 import * as net from "net";
-import { ipv4Header, pcapAppend, pcapClose, pcapCreate } from "./tcf-all";
+import { EMPTY_BUFFER, TCF_END_OF_PACKET_MARKER, ipv4Header, pcapAppend, pcapClose, pcapCreate } from "./tcf-all";
 
 const PORT = 1535;
 const OTHER_PORT = 1534;
 const OTHER_HOST = "127.0.0.1";
-const END_OF_PACKET_MARKET = Uint8Array.from([3, 1]);
 
 const PCAP_LOCALHOST = [127, 0, 0, 1];
 const PCAP_OTHER_HOST = [127, 0, 0, 2];
@@ -25,7 +24,7 @@ var server = net.createServer(function (socket) {
     proxy.connect(OTHER_PORT, OTHER_HOST);
 
     {
-        let prevData = Buffer.from([]);
+        let prevData = EMPTY_BUFFER;
         proxy.on('data', data => {
             console.log("Proxy got");
             console.log(data.toString());
@@ -36,12 +35,12 @@ var server = net.createServer(function (socket) {
                 prevData = Buffer.concat([prevData, data]);
 
                 while (true) {
-                    const eom = prevData.indexOf(END_OF_PACKET_MARKET);
+                    const eom = prevData.indexOf(TCF_END_OF_PACKET_MARKER);
                     if (eom !== -1) {
                         const packet = prevData.subarray(0, eom);
                         prevData = prevData.subarray(eom + 2);
 
-                        pcapAppend(pcapFile, Buffer.concat([ipv4Header(packet, PCAP_OTHER_HOST, PCAP_LOCALHOST), packet, Buffer.from(END_OF_PACKET_MARKET)]));
+                        pcapAppend(pcapFile, Buffer.concat([ipv4Header(packet, PCAP_OTHER_HOST, PCAP_LOCALHOST), packet, TCF_END_OF_PACKET_MARKER]));
                     } else {
                         //this buffer has no EOM, we stil need to receive more data
                         return;
@@ -61,7 +60,7 @@ var server = net.createServer(function (socket) {
     });
 
     {
-        let prevData = Buffer.from([]);
+        let prevData = EMPTY_BUFFER;
         socket.on('data', data => {
             console.log("Got");
             console.log(data.toJSON());
@@ -71,13 +70,13 @@ var server = net.createServer(function (socket) {
                 prevData = Buffer.concat([prevData, data]);
 
                 while (true) {
-                    const eom = prevData.indexOf(END_OF_PACKET_MARKET);
+                    const eom = prevData.indexOf(TCF_END_OF_PACKET_MARKER);
                     if (eom !== -1) {
                         const packet = prevData.subarray(0, eom);
                         prevData = prevData.subarray(eom + 2);
 
                         //note the reverted IP addresses
-                        pcapAppend(pcapFile, Buffer.concat([ipv4Header(packet, PCAP_LOCALHOST, PCAP_OTHER_HOST), packet, Buffer.from(END_OF_PACKET_MARKET)]));
+                        pcapAppend(pcapFile, Buffer.concat([ipv4Header(packet, PCAP_LOCALHOST, PCAP_OTHER_HOST), packet, TCF_END_OF_PACKET_MARKER]));
                     } else {
                         //this buffer has no EOM, we stil need to receive more data
                         return;

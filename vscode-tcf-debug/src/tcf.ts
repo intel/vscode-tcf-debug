@@ -2,7 +2,7 @@
 Copyright (C) 2022, 2023 Intel Corporation
 SPDX-License-Identifier: MIT
 */
-import { split, splitBuffer, SimpleCommand, SimpleEvent, PromiseSuccess, PromiseError, TimeoutError } from './tcf/tcfutils';
+import { split, splitBuffer, SimpleCommand, SimpleEvent, PromiseSuccess, PromiseError, TimeoutError, EMPTY_BUFFER, TCF_END_OF_PACKET_MARKER } from './tcf/tcfutils';
 import { TCFContextData, SuspendRunControlCommand, ResumeRunControlCommand, GetContextRunControlCommand, Modes, asNullableTCFContextData } from './tcf/runcontrol';
 import { AddBreakpointsCommand, BreakpointData, RemoveBreakpointsCommand, SetBreakpointsCommand } from './tcf/breakpoints';
 import { HelloLocatorEvent } from './tcf/locator';
@@ -410,7 +410,7 @@ export abstract class AbstractTCFClient {
             this.onSocketError(err);
         });
 
-        let prevData = Buffer.from([]);
+        let prevData = EMPTY_BUFFER;
         socket.on('data', data => {
             data = Buffer.concat([prevData, data]);
 
@@ -432,8 +432,7 @@ export abstract class AbstractTCFClient {
             // this.console.log("DATA:");
             // this.console.log(data.toString());
             while (true) {
-                const END_OF_PACKET_MARKET = Uint8Array.from([3, 1]);
-                const eom = data.indexOf(END_OF_PACKET_MARKET);
+                const eom = data.indexOf(TCF_END_OF_PACKET_MARKER);
                 if (eom === -1) {
                     //this buffer has no EOM. Either we read it all or we stil need to receive more data
                     prevData = data;
@@ -443,7 +442,7 @@ export abstract class AbstractTCFClient {
                 data = data.subarray(0, eom);
 
                 if (this.pcapFile !== null) {
-                    pcapAppend(this.pcapFile, Buffer.concat([ipv4Header(data, PCAP_OTHER_HOST, PCAP_LOCALHOST), data, Buffer.from(END_OF_PACKET_MARKET)]));
+                    pcapAppend(this.pcapFile, Buffer.concat([ipv4Header(data, PCAP_OTHER_HOST, PCAP_LOCALHOST), data, TCF_END_OF_PACKET_MARKER]));
                 }
 
                 //this.console.log("DATA:");
@@ -460,7 +459,7 @@ export abstract class AbstractTCFClient {
                         break;
                     case "E".charCodeAt(0):
                         //could be an event 
-                        const [E, evtService, event, ...rawEventDatas] = split(data, Buffer.from([0]));
+                        const [E, evtService, event, ...rawEventDatas] = split(data);
                         //this.console.log("Parsing JSON: ");
                         //this.console.log(rawEventData.toString());
                         this.console.received(`⬅️ Received ${evtService.toString()} ${event.toString()} ${rawEventDatas[0]}`);
@@ -484,7 +483,7 @@ export abstract class AbstractTCFClient {
                     case "R".charCodeAt(0):
                     case "P".charCodeAt(0):
                         //could be a result
-                        const [R, resultToken, ...resultRest] = split(data, Buffer.from([0]));
+                        const [R, resultToken, ...resultRest] = split(data);
                         const resultTokenStr = resultToken.toString();
 
                         if (R.toString() === "R") {
