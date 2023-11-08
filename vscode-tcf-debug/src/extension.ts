@@ -4,13 +4,15 @@ SPDX-License-Identifier: MIT
 */
 import * as vscode from 'vscode';
 import { TCFDebugSession } from './debugProvider';
-import { NPUTaskProvider } from './taskProvider';
-import { checkForUpdates } from './updater';
 import { LoggingDebugSession } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 
+export interface ActivateHook {
+	activate(context: vscode.ExtensionContext): void;
+}
+
 export function activate(context: vscode.ExtensionContext) {
-	void(vscode.window.showInformationMessage('TCF debugging extension is enabled.'));
+	void (vscode.window.showInformationMessage('TCF debugging extension is enabled.'));
 
 	// debug-provider 
 	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('tcf', new TCFConfigurationProvider()));
@@ -19,17 +21,20 @@ export function activate(context: vscode.ExtensionContext) {
 	//temporary migration message
 	context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('vpu', new VPURenameDebugAdapterFactory()));
 
-	// task-provider
-	context.subscriptions.push(vscode.tasks.registerTaskProvider('npu', new NPUTaskProvider()));
-
 	//this is handy because it can be used in launch.json to be expanded via ${command:timestamp} in eg. record pcap paths
 	context.subscriptions.push(vscode.commands.registerCommand('timestamp', () => {
 		return new Date().toISOString()
 			.replaceAll(":", "-"); //Windows does not like `:` in paths
 	}));
 
-	checkForUpdates(context.extension.packageJSON.version, latestVersion =>
-		vscode.window.showInformationMessage(`TCF Extension latest version is ${latestVersion} (you have ${context.extension.packageJSON.version})`));
+	const s = "./extension-postactivate";
+	import(s)
+		.then((module) => {
+			const h = module.default as ActivateHook;
+			h.activate(context);
+		}).catch(e => {
+			//ignore
+		});
 }
 
 export class VPURenameDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
