@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import { TCFDebugSession } from './debugProvider';
 import { LoggingDebugSession } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
+import { PathLoader } from './loader';
 
 export interface ActivateHook {
 	activate(context: vscode.ExtensionContext): void;
@@ -27,11 +28,11 @@ export function activate(context: vscode.ExtensionContext) {
 			.replaceAll(":", "-"); //Windows does not like `:` in paths
 	}));
 
-	const s = "./extension-postactivate";
-	import(s)
-		.then((module) => {
-			const h = module.default as ActivateHook;
-			h.activate(context);
+	new PathLoader<ActivateHook>("./").get("extension-postactivate")
+		.then(h => {
+			if (h !== undefined) {
+				h.activate(context);
+			}
 		}).catch(e => {
 			//ignore
 		});
