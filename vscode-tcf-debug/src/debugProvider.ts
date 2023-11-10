@@ -33,6 +33,8 @@ import { LifetimeDebugSession } from './lifetimeDebugSession';
 import * as validateLauchRequestArguments from './validators/validate-TCFLaunchRequestArguments';
 import { DisassembleDisassemblyCommand, DisassemblyParameters, GetCapabilitiesDisassemblyCommand } from './tcf/disassembly';
 import { MockFlags } from './mocksocket';
+import { MappedLoader, PathLoader } from './loader';
+import { Repl, ReplProvider } from './repl';
 
 export interface InternalLaunchArguments {
 	/**
@@ -143,6 +145,10 @@ class DebugLogger implements TCFLogger {
 	error(message: string): void {
 		this.parent.sendEvent(new OutputEvent(this.prefix + this.time() + " " + message + "\n", "out"));
 	}
+
+	stdout(message: string): void {
+		this.parent.sendEvent(new OutputEvent(message, "stdout"));
+	}
 }
 
 enum ErrorCodes {
@@ -153,7 +159,8 @@ enum ErrorCodes {
 	pauseError,
 	stackTraceError,
 	watchError,
-	disassemblyError
+	disassemblyError,
+	evaluateError,
 }
 
 //see https://microsoft.github.io/debug-adapter-protocol/specification#Events_Stopped
@@ -433,7 +440,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			//single context hit, find the corresponding threadId
 			const context = contexts.values().next().value;
 
-			void(this.verifyInlinedBreakpoint(context, breakpointTcfId)); //TODO: Should this be await-ed instead of ignored with the void operator?
+			void (this.verifyInlinedBreakpoint(context, breakpointTcfId)); //TODO: Should this be await-ed instead of ignored with the void operator?
 
 			//NOTE: *If* we don't know the thread ID, it may be a new thread or we have never had a threadsRequest.
 			// So, we assign a new threadId and hope VSCode will get a Thread instance with this id when it calls threadRequest
@@ -454,11 +461,34 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			this.outer.onSocketError(err);
 		}
 
+		protected onEvent(service: string, event: string, datas: Buffer[]): void {
+			if (this.outer.onHandledEvent(service, event, datas)) {
+				return;
+			}
+			super.onEvent(service, event, datas);
+		}
+
 	}(this.tcfLogger, this);
 
 	constructor(enablePathMapper: boolean = false) {
 		super();
 		this.enabledPathMapper = enablePathMapper;
+	}
+
+	protected onHandledEvent(service: string, event: string, datas: Buffer[]): boolean {
+		let handled = false;
+		this.repls.forEach(r => {
+			if (handled) {
+				//already found a match, do nothing.
+				return;
+			}
+			if (r.handledEvent(service, event, datas)) {
+				handled = true;
+				//TODO: can't break a for each, maybe not the best API?
+				return;
+			}
+		});
+		return handled;
 	}
 
 	protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
@@ -896,7 +926,29 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		this.onThreadResumed(threadId);
 	}
 
-	protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
+	repls: MappedLoader<ReplProvider, Repl> = new MappedLoader(new PathLoader("./repl"), s => s.create(this.tcfClient, this.tcfLogger));
+
+	protected async evaluateRequestAsync(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
+		switch (args.context) {
+			case "watch":
+				await this.evaluateWatchRequest(response, args, request);
+				break;
+			case "repl":
+				let repl = await this.repls.get(args.context);
+				if (repl !== undefined) {
+					await repl.evaluateRequest(response, args, request);
+					this.sendResponse(response);
+				} else {
+					this.sendErrorResponse(response, ErrorCodes.evaluateError, `No repl handler`);
+				}
+				break;
+			default:
+				this.sendErrorResponse(response, ErrorCodes.evaluateError, `Unknown context ${args.context}`);
+				break;
+		}
+	}
+
+	private async evaluateWatchRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
 		if (args.frameId === undefined) {
 			// TODO: According to the spec a missing frameId means global scope. Implement this in the future. 
 			// See https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Evaluate
@@ -1064,6 +1116,9 @@ export class TCFDebugSession extends LifetimeDebugSession {
 	}
 
 	protected disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request | undefined): void {
+		this.repls.forEach(r => {
+			r.disconnect();
+		});
 		this.tcfClient.disconnect();
 		this.sendResponse(response);
 	}

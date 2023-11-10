@@ -57,6 +57,8 @@ export class PathLoader<T> implements Loader<T> {
      * handle error `e` in subclass
      */
     protected error(e: any, name: string) {
+        console.log(name);
+        console.log(e);
     }
 
 }

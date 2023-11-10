@@ -21,6 +21,7 @@ export interface TCFLogger {
 
     log(message: string): void;
     error(message: string): void;
+    stdout(message: string): void;
 }
 
 //XXX: This could also be a lifecycle handler with preSend method
