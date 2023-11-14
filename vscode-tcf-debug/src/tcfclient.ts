@@ -21,7 +21,7 @@ export abstract class TCFClient extends AbstractTCFClient {
 
     async getVariables(): Promise<ClientVariable[]> {
         let result: ClientVariable[] = [];
-        const runControlContexts = await this.loadChildren(null);
+        const runControlContexts = await this.loadRunControlChildren(null);
         for (const ctx of runControlContexts) {
             const ctxVariables = await this.getContextVariables(ctx);
             result = result.concat(ctxVariables);
@@ -125,20 +125,8 @@ export abstract class TCFClient extends AbstractTCFClient {
         return helper.createVariable(typeDetails, symbolDetails, new SymbolNameProvider(symbolDetails), new SymbolRawValueProvider(symbolDetails, ctx, helper, helper /* as Logger */));
     }
 
-    async loadChildren(contextId: string | null) {
-        const topLevel: string[] = await this.sendCommand(new GetChildrenRunControlCommand(contextId)) || [];
-
-        let result: string[] = [];
-        for (const context of topLevel) {
-            const children = await this.loadChildren(context);
-            result.push(...children);
-        }
-
-        return [...topLevel, ...result];
-    }
-
     async getThreads() {
-        const contexts = await this.loadChildren(null);
+        const contexts = await this.loadRunControlChildren(null);
         const results = [];
         for (const context of contexts) {
             const info: TCFContextData | null = await this.sendCommand(new GetContextRunControlCommand(context));

@@ -2,15 +2,15 @@
 Copyright (C) 2022, 2023 Intel Corporation
 SPDX-License-Identifier: MIT
 */
-import { split, splitBuffer, SimpleCommand, SimpleEvent, PromiseSuccess, PromiseError, TimeoutError, EMPTY_BUFFER, TCF_END_OF_PACKET_MARKER } from './tcf/tcfutils';
-import { TCFContextData, SuspendRunControlCommand, ResumeRunControlCommand, GetContextRunControlCommand, Modes, asNullableTCFContextData } from './tcf/runcontrol';
+import { split, splitBuffer, SimpleCommand, PromiseSuccess, PromiseError, TimeoutError, EMPTY_BUFFER, TCF_END_OF_PACKET_MARKER } from './tcf/tcfutils';
+import { TCFContextData, SuspendRunControlCommand, ResumeRunControlCommand, GetContextRunControlCommand, Modes, asNullableTCFContextData, GetChildrenRunControlCommand } from './tcf/runcontrol';
 import { AddBreakpointsCommand, BreakpointData, RemoveBreakpointsCommand, SetBreakpointsCommand } from './tcf/breakpoints';
-import { HelloLocatorEvent } from './tcf/locator';
-import { QueryCommand } from './tcf/contextquery';
+import { HelloLocatorEvent, parseHelloLocatorEvent } from './tcf/locator';
+import { CONTEXT_QUERY_SERVICE, QueryCommand } from './tcf/contextquery';
 
 import * as net from "net";
 import { TCFError, TCFErrorCodes } from './tcf/error';
-import { WriteablePcap, ipv4Header, pcapAppend, pcapClose } from './pcap';
+import { WriteablePcap, ipv4Header, pcapAppend } from './pcap';
 import { MockFlags, MockTCFSocket, Sockety } from './mocksocket';
 
 export interface TCFLogger {
@@ -373,14 +373,33 @@ export abstract class AbstractTCFClient {
     async handshake() {
         const hello = new HelloLocatorEvent();
         this.send(hello.toBuffer());
-        await this.waitEvent(hello.service(), hello.event()); //using the hello methods to avoid hardcoding the service/event names
+        const r = await this.waitEvent(hello.service(), hello.event()); //using the hello methods to avoid hardcoding the service/event names
 
-        const contexts = await this.sendCommand(new QueryCommand("*"));
-        // this.send(new GetChildrenRunControlCommand(null)); //much better than a QueryCommand("*")?
+        const supportedServices = parseHelloLocatorEvent(r); //may throw
+
+        let contexts: string[];
+        if (supportedServices?.includes(CONTEXT_QUERY_SERVICE)) {
+            contexts = await this.sendCommand(new QueryCommand("*"));
+        } else {
+            //fallback to RunControl
+            contexts = await this.loadRunControlChildren(null);
+        }
 
         for (const context of contexts) {
             await this.sendCommand(new GetContextRunControlCommand(context));
         }
+    }
+
+    async loadRunControlChildren(contextId: string | null) {
+        const topLevel: string[] = await this.sendCommand(new GetChildrenRunControlCommand(contextId)) || [];
+
+        let result: string[] = [];
+        for (const context of topLevel) {
+            const children = await this.loadRunControlChildren(context);
+            result.push(...children);
+        }
+
+        return [...topLevel, ...result];
     }
 
     protected onSocketError(err: any) {
@@ -532,6 +551,11 @@ export abstract class AbstractTCFClient {
                 .catch(e => console.log(e)); //TODO: Just printing this error is iffy. Maybe disconnect itself should be async?
             this.pcapFile = null;
         }
+        //fail all pending commands
+        Object.keys(this.asyncSends).forEach(k => {
+            const pr = this.deleteAsync(k);
+            pr?.error(new TimeoutError("disconected"));
+        });
     }
 
 }
