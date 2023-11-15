@@ -6,9 +6,14 @@ import * as vscode from 'vscode';
 import { TCFDebugSession } from './debugProvider';
 import { LoggingDebugSession } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
+import { PathLoader } from './loader';
+
+export interface ActivateHook {
+	activate(context: vscode.ExtensionContext): void;
+}
 
 export function activate(context: vscode.ExtensionContext) {
-	void(vscode.window.showInformationMessage('TCF debugging extension is enabled.'));
+	void (vscode.window.showInformationMessage('TCF debugging extension is enabled.'));
 
 	// debug-provider 
 	context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('tcf', new TCFConfigurationProvider()));
@@ -22,6 +27,15 @@ export function activate(context: vscode.ExtensionContext) {
 		return new Date().toISOString()
 			.replaceAll(":", "-"); //Windows does not like `:` in paths
 	}));
+
+	new PathLoader<ActivateHook>("./").get("extension-postactivate")
+		.then(h => {
+			if (h !== undefined) {
+				h.activate(context);
+			}
+		}).catch(e => {
+			//ignore
+		});
 }
 
 export class VPURenameDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {

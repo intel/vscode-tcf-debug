@@ -2,15 +2,15 @@
 Copyright (C) 2022, 2023 Intel Corporation
 SPDX-License-Identifier: MIT
 */
-import { split, splitBuffer, SimpleCommand, SimpleEvent, PromiseSuccess, PromiseError, TimeoutError } from './tcf/tcfutils';
-import { TCFContextData, SuspendRunControlCommand, ResumeRunControlCommand, GetContextRunControlCommand, Modes, asNullableTCFContextData } from './tcf/runcontrol';
+import { split, splitBuffer, SimpleCommand, PromiseSuccess, PromiseError, TimeoutError, EMPTY_BUFFER, TCF_END_OF_PACKET_MARKER } from './tcf/tcfutils';
+import { TCFContextData, SuspendRunControlCommand, ResumeRunControlCommand, GetContextRunControlCommand, Modes, asNullableTCFContextData, GetChildrenRunControlCommand } from './tcf/runcontrol';
 import { AddBreakpointsCommand, BreakpointData, RemoveBreakpointsCommand, SetBreakpointsCommand } from './tcf/breakpoints';
-import { HelloLocatorEvent } from './tcf/locator';
-import { QueryCommand } from './tcf/contextquery';
+import { HelloLocatorEvent, parseHelloLocatorEvent } from './tcf/locator';
+import { CONTEXT_QUERY_SERVICE, QueryCommand } from './tcf/contextquery';
 
 import * as net from "net";
 import { TCFError, TCFErrorCodes } from './tcf/error';
-import { WriteablePcap, ipv4Header, pcapAppend, pcapClose } from './pcap';
+import { WriteablePcap, ipv4Header, pcapAppend } from './pcap';
 import { MockFlags, MockTCFSocket, Sockety } from './mocksocket';
 
 export interface TCFLogger {
@@ -21,6 +21,7 @@ export interface TCFLogger {
 
     log(message: string): void;
     error(message: string): void;
+    stdout(message: string): void;
 }
 
 //XXX: This could also be a lifecycle handler with preSend method
@@ -372,14 +373,33 @@ export abstract class AbstractTCFClient {
     async handshake() {
         const hello = new HelloLocatorEvent();
         this.send(hello.toBuffer());
-        await this.waitEvent(hello.service(), hello.event()); //using the hello methods to avoid hardcoding the service/event names
+        const r = await this.waitEvent(hello.service(), hello.event()); //using the hello methods to avoid hardcoding the service/event names
 
-        const contexts = await this.sendCommand(new QueryCommand("*"));
-        // this.send(new GetChildrenRunControlCommand(null)); //much better than a QueryCommand("*")?
+        const supportedServices = parseHelloLocatorEvent(r); //may throw
+
+        let contexts: string[];
+        if (supportedServices?.includes(CONTEXT_QUERY_SERVICE)) {
+            contexts = await this.sendCommand(new QueryCommand("*"));
+        } else {
+            //fallback to RunControl
+            contexts = await this.loadRunControlChildren(null);
+        }
 
         for (const context of contexts) {
             await this.sendCommand(new GetContextRunControlCommand(context));
         }
+    }
+
+    async loadRunControlChildren(contextId: string | null) {
+        const topLevel: string[] = await this.sendCommand(new GetChildrenRunControlCommand(contextId)) || [];
+
+        let result: string[] = [];
+        for (const context of topLevel) {
+            const children = await this.loadRunControlChildren(context);
+            result.push(...children);
+        }
+
+        return [...topLevel, ...result];
     }
 
     protected onSocketError(err: any) {
@@ -410,7 +430,7 @@ export abstract class AbstractTCFClient {
             this.onSocketError(err);
         });
 
-        let prevData = Buffer.from([]);
+        let prevData = EMPTY_BUFFER;
         socket.on('data', data => {
             data = Buffer.concat([prevData, data]);
 
@@ -432,8 +452,7 @@ export abstract class AbstractTCFClient {
             // this.console.log("DATA:");
             // this.console.log(data.toString());
             while (true) {
-                const END_OF_PACKET_MARKET = Uint8Array.from([3, 1]);
-                const eom = data.indexOf(END_OF_PACKET_MARKET);
+                const eom = data.indexOf(TCF_END_OF_PACKET_MARKER);
                 if (eom === -1) {
                     //this buffer has no EOM. Either we read it all or we stil need to receive more data
                     prevData = data;
@@ -443,7 +462,7 @@ export abstract class AbstractTCFClient {
                 data = data.subarray(0, eom);
 
                 if (this.pcapFile !== null) {
-                    pcapAppend(this.pcapFile, Buffer.concat([ipv4Header(data, PCAP_OTHER_HOST, PCAP_LOCALHOST), data, Buffer.from(END_OF_PACKET_MARKET)]));
+                    pcapAppend(this.pcapFile, Buffer.concat([ipv4Header(data, PCAP_OTHER_HOST, PCAP_LOCALHOST), data, TCF_END_OF_PACKET_MARKER]));
                 }
 
                 //this.console.log("DATA:");
@@ -460,7 +479,7 @@ export abstract class AbstractTCFClient {
                         break;
                     case "E".charCodeAt(0):
                         //could be an event 
-                        const [E, evtService, event, ...rawEventDatas] = split(data, Buffer.from([0]));
+                        const [E, evtService, event, ...rawEventDatas] = split(data);
                         //this.console.log("Parsing JSON: ");
                         //this.console.log(rawEventData.toString());
                         this.console.received(`⬅️ Received ${evtService.toString()} ${event.toString()} ${rawEventDatas[0]}`);
@@ -484,7 +503,7 @@ export abstract class AbstractTCFClient {
                     case "R".charCodeAt(0):
                     case "P".charCodeAt(0):
                         //could be a result
-                        const [R, resultToken, ...resultRest] = split(data, Buffer.from([0]));
+                        const [R, resultToken, ...resultRest] = split(data);
                         const resultTokenStr = resultToken.toString();
 
                         if (R.toString() === "R") {
@@ -532,6 +551,11 @@ export abstract class AbstractTCFClient {
                 .catch(e => console.log(e)); //TODO: Just printing this error is iffy. Maybe disconnect itself should be async?
             this.pcapFile = null;
         }
+        //fail all pending commands
+        Object.keys(this.asyncSends).forEach(k => {
+            const pr = this.deleteAsync(k);
+            pr?.error(new TimeoutError("disconected"));
+        });
     }
 
 }

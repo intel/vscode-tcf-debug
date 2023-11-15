@@ -44,6 +44,9 @@ export const logger = new class implements TCFLogger {
     error(message: string): void {
         console.log(message);
     }
+    stdout(message: string): void {
+        console.log(message);
+    }
 }();
 export const nologger = new class implements TCFLogger {
     received(message: string): void {
@@ -57,6 +60,9 @@ export const nologger = new class implements TCFLogger {
     }
     error(message: string): void {
         //nothing
+    }
+    stdout(message: string): void {
+        console.log(message);
     }
 }();
 
@@ -185,6 +191,10 @@ export class TinyDAP {
 
     forEvent(e: string): Promise<any> {
         return this.getOrAddEvent(e).promise;
+    }
+
+    nextEvent(e: string): Promise<any> {
+        return this.addEvent(e).promise;
     }
 
     send(m: DebugProtocol.ProtocolMessage): Promise<any> {

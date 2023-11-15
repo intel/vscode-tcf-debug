@@ -9,7 +9,7 @@ import { MapToSourceLineNumbersCommand, TCFCodeAreaLineNumbers } from "./tcf/lin
 import { asNullableTCFContextData, asTCFContextData, ContextSuspendedData, GetChildrenRunControlCommand, GetContextRunControlCommand, GetStateRunControlCommand, parseContextSuspended, TCFContextData, TCFStateData } from "./tcf/runcontrol";
 import { GetChildrenStackTraceCommand, GetContextStackTraceCommand, TCFContextDataStackTrace } from "./tcf/stacktrace";
 import { FindByAddrSymbolsCommand, GetContextSymbolsCommand, TCFTypeClass } from "./tcf/symbols";
-import { asArray, asNullableArray, asString, asStringArray, CancellationFunction, InterruptedError, parseResponse, responseLengthAbout, SimpleCommand, TCFPartialResultError } from "./tcf/tcfutils";
+import { asArray, asNullableArray, asString, asStringArray, CancellationFunction, EMPTY_BUFFER, InterruptedError, parseResponse, responseLengthAbout, SimpleCommand, TCFPartialResultError } from "./tcf/tcfutils";
 import { DefaultVariableHelper } from "./variables/helper";
 import { SymbolRawValueProvider } from "./variables/symbol";
 import { ClientVariable, SymbolNameProvider } from "./variables/types";
@@ -21,7 +21,7 @@ export abstract class TCFClient extends AbstractTCFClient {
 
     async getVariables(): Promise<ClientVariable[]> {
         let result: ClientVariable[] = [];
-        const runControlContexts = await this.loadChildren(null);
+        const runControlContexts = await this.loadRunControlChildren(null);
         for (const ctx of runControlContexts) {
             const ctxVariables = await this.getContextVariables(ctx);
             result = result.concat(ctxVariables);
@@ -125,20 +125,8 @@ export abstract class TCFClient extends AbstractTCFClient {
         return helper.createVariable(typeDetails, symbolDetails, new SymbolNameProvider(symbolDetails), new SymbolRawValueProvider(symbolDetails, ctx, helper, helper /* as Logger */));
     }
 
-    async loadChildren(contextId: string | null) {
-        const topLevel: string[] = await this.sendCommand(new GetChildrenRunControlCommand(contextId)) || [];
-
-        let result: string[] = [];
-        for (const context of topLevel) {
-            const children = await this.loadChildren(context);
-            result.push(...children);
-        }
-
-        return [...topLevel, ...result];
-    }
-
     async getThreads() {
-        const contexts = await this.loadChildren(null);
+        const contexts = await this.loadRunControlChildren(null);
         const results = [];
         for (const context of contexts) {
             const info: TCFContextData | null = await this.sendCommand(new GetContextRunControlCommand(context));
@@ -243,7 +231,7 @@ export abstract class TCFClient extends AbstractTCFClient {
      * @returns a list of buffers with the first 'error' buffer empty.
      */
     private static noError(buffers: Buffer[]): Buffer[] {
-        return [Buffer.from([])].concat(buffers);
+        return [EMPTY_BUFFER].concat(buffers);
     }
 
     //see https://download.eclipse.org/tools/tcf/tcf-docs/TCF%20Service%20-%20Run%20Control.html#Events

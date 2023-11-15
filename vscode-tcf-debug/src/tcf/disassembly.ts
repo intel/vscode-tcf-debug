@@ -125,7 +125,7 @@ export class DisassembleDisassemblyCommand extends DisassemblyCommand<Disassembl
     }
 
     toBuffer(token: string): Buffer {
-        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.startLocation), JSON.stringify(this.size), JSON.stringify(this.params)], null);
+        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.contextID), JSON.stringify(this.startLocation), JSON.stringify(this.size), JSON.stringify(this.params)]);
     }
 
 } 

@@ -4,6 +4,8 @@ SPDX-License-Identifier: MIT
 */
 import { ValidatingCommand, asStringArray } from './tcfutils';
 
+export const CONTEXT_QUERY_SERVICE = "ContextQuery";
+
 //see https://download.eclipse.org/tools/tcf/tcf-docs/TCF%20Service%20-%20Context%20Query.html#CmdQuery
 export class QueryCommand extends ValidatingCommand<string[]> {
     query: string;
@@ -18,7 +20,7 @@ export class QueryCommand extends ValidatingCommand<string[]> {
     }
 
     service(): string {
-        return "ContextQuery";
+        return CONTEXT_QUERY_SERVICE;
     }
 
     command(): string {

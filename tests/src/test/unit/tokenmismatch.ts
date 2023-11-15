@@ -24,7 +24,7 @@ export async function createPcapWithMismatchedToken(output: string, tokenGen: Si
     );
 
     //should receive a reply
-    packet = new HelloLocatorEvent().toBuffer();
+    packet = new HelloLocatorEvent(["RunControl", "ContextQuery", "Locator"]).toBuffer();
     pcapAppend(outFD,
         Buffer.concat(
             [ipv4Header(packet, PCAP_OTHER_HOST, PCAP_LOCALHOST),

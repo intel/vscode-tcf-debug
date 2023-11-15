@@ -1,0 +1,35 @@
+#
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: MIT
+#
+name: Build extension
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build tcf
+        run: |
+          cd tcf
+          npm ci
+          npm run compile
+          npm pack
+      - name: Build vscode-tcf-debug
+        run: |
+          cd vscode-tcf-debug
+          npm ci
+          npm run lint
+          npm run package
+          npm pack
+      - name: Save VSIX
+        uses: actions/upload-artifact@v3
+        with:
+          name: vscode-tcf-debug.vsix
+          path: vscode-tcf-debug/*vsix
+      - name: Run tests
+        run: |
+          cd tests
+          npm ci
+          npm run compile
+          npm run unittest

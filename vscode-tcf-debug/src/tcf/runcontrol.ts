@@ -144,7 +144,7 @@ export class ResumeRunControlCommand extends RunControlEmptyCommand {
 
         const count = "1"; //doesn't matter, normal execution has no count
         //XXX: JSON stringifying the context ID is very important!
-        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.contextID), this.mode.toString(), count], undefined);
+        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.contextID), this.mode.toString(), count]);
     }
 }
 
@@ -197,7 +197,7 @@ export class GetChildrenRunControlCommand extends RunControlValidatingCommand<st
 
     toBuffer(token: string): Buffer {
         //this needs to be explicit since arguments can also be null and must be serialized as null
-        return toBuffer(["C", token, this.service(), this.command()], this.arguments(), true);
+        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.arguments())]);
     }
 
     override cast(json: any): string[] | null {

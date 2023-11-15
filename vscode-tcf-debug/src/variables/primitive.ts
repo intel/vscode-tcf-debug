@@ -28,7 +28,6 @@ export class PrimitiveVariable extends AbstractVariable {
         switch (this.type.TypeClass) {
             case TCFTypeClass.integer: // SIGNED integer
                 switch (variableRawValue.length) {
-                    //TODO: how many bytes does an int have?! Let's hope 32 bit or 16bit
                     case 8: //64bit
                         const variable64Value = bigEndian ? variableRawValue.readBigInt64BE() : variableRawValue.readBigInt64LE();
 
