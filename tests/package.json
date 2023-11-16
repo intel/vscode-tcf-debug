@@ -3,7 +3,7 @@
   "description": "TCF tests",
   "displayName": "Public Tests",
   "publisher": "Intel",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "license": "MIT",
   "engines": {
     "vscode": "^1.79.0"
