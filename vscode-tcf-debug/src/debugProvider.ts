@@ -35,6 +35,7 @@ import { DisassembleDisassemblyCommand, DisassemblyParameters, GetCapabilitiesDi
 import { MockFlags } from './mocksocket';
 import { MappedLoader, PathLoader } from './loader';
 import { Repl, ReplProvider } from './repl';
+import { GetChildrenRegistersCommand, GetContextRegistersCommand, GetRegistersCommand } from './tcf/registers';
 
 export interface InternalLaunchArguments {
 	/**
@@ -987,6 +988,12 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			//const variableInfo = this.decodeVariableValue(variableName, v);
 			const r = new Variable(clientVariable.name() ?? "", await clientVariable.displayValue() || "");
 			const rd = r as DebugProtocol.Variable;
+			if (clientVariable.isRegister()) {
+				//not sure how to best present the fact that this variable is stored in a register...
+				rd.presentationHint = {
+					visibility: 'internal'
+				};
+			}
 			rd.type = variableType;
 			const children = await clientVariable.getChildren();
 			rd.indexedVariables = children?.length; //TODO: a smaller method childrenSize may help here
@@ -1049,15 +1056,37 @@ export class TCFDebugSession extends LifetimeDebugSession {
 
 		let [ctx, stack] = this.getStackFrameDetails(args.variablesReference);
 
+		if (this.isRegisterScopeVariableReference(args.variablesReference)) {
+			//registers!
+
+			//TODO: add recursion, we could have a whole tree of registers
+			const regs = await this.tcfClient.sendCommand(new GetChildrenRegistersCommand(ctx));
+
+			if (regs) {
+				const rctxs = await Promise.all(regs.map(r => this.tcfClient.sendCommand(new GetContextRegistersCommand(r))));
+				const rvalues = await Promise.all(regs.map(r => this.tcfClient.sendCommand(new GetRegistersCommand(r))));
+
+				let vars = [];
+				for (let i = 0; i < regs.length; i++) {
+					const name = rctxs[i]?.Name ?? `Register ${regs[i]}`;
+					const value = "0x" + rvalues[i].toString("hex");
+					const v = new Variable(name, value);
+					vars.push(v);
+				}
+				response.body = {
+					variables: vars
+				};
+			}
+
+			this.sendResponse(response);
+			return;
+		}
+
 		try {
 			const vars = await this.tcfClient.getStackVariables(ctx, stack);
 
 			const resultVars = [];
 			for (const v of vars) {
-				//show register vars only in register scope
-				if (this.isLocalScopeVariableReference(args.variablesReference) === v.isRegister()) {
-					continue;
-				}
 				if (v.name() === undefined) {
 					continue;
 				}

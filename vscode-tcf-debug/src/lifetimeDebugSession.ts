@@ -81,6 +81,10 @@ class ThreadInfo<T> {
         return (ref & LOCAL_SCOPE_MASK) === LOCAL_SCOPE_MASK;
     }
 
+    static isRegisterScopeVariableReference(ref: ReferenceNumber): boolean {
+        return (ref & REGISTER_SCOPE_MASK) === REGISTER_SCOPE_MASK;
+    }
+
     static isSubVariableReference(ref: ReferenceNumber): boolean {
         return (ref & STRUCT_FIELD_MASK) === STRUCT_FIELD_MASK;
     }
@@ -141,6 +145,9 @@ export class LifetimeDebugSession extends AsyncDebugSession {
 
     protected isLocalScopeVariableReference(ref: number): boolean {
         return ThreadInfo.isLocalScopeVariableReference(ref as ReferenceNumber);
+    }
+    protected isRegisterScopeVariableReference(ref: number): boolean {
+        return ThreadInfo.isRegisterScopeVariableReference(ref as ReferenceNumber);
     }
     protected isSubVariableReference(ref: number): boolean {
         return ThreadInfo.isSubVariableReference(ref as ReferenceNumber);

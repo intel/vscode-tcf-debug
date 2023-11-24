@@ -1,5 +1,14 @@
 ## Release notes
 
+### 0.2.7
+
+* Shows CPU registers in the Registers scope.
+  Note that previously local variables *stored* in registers were
+  showed in that scope. Now CPU registers are showed while
+  all local variables are grouped together. The local variables
+  stored in registers have a different presentation hint which
+  VSCode may use to show them slightly differently.
+
 ### 0.2.6
 * Adds generic dynamic import service loader 
 * Fallback to RunControl if ContextQuery is unavailable during initial handshake 
