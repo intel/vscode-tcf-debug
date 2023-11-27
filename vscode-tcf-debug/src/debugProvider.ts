@@ -56,6 +56,9 @@ export interface InternalLaunchArguments {
 //see package.json configurationAttributes which is the JSON schema (aka TCFLaunchRequestArguments.json) for this object
 //Note that '$ref' is not supported by vscode so it must be generated like this (--refs = false):
 // npx typescript-json-schema --required ./tsconfig.json --refs false TCFLaunchRequestArguments  -o src/schema/TCFLaunchRequestArguments.json
+// then
+// npx ajv compile --code-lines --allowUnionTypes -s src/schema/TCFLaunchRequestArguments.json -o src/validators/validate-TCFLaunchRequestArguments.js
+// npx tsc --allowJs --declaration --emitDeclarationOnly ./src/validators/*js  --outDir ./src/validators/
 export interface TCFLaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
 	/**
 	 * (Remote) TCF agent host
@@ -89,6 +92,10 @@ export interface TCFLaunchRequestArguments extends DebugProtocol.LaunchRequestAr
 	 */
 	pathMapper?: string;
 	internal?: InternalLaunchArguments;
+	/**
+	 * Maximum number of stack frames that a stackTrace can have. Unlimited, if not defined.
+	 */
+	stackTraceDepth?: number;
 }
 
 export function asLaunchRequestArguments(result: any): TCFLaunchRequestArguments {
@@ -314,6 +321,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 	protected contextToThreadId = new Map<string, number>();
 
 	protected enabledPathMapper: boolean;
+	protected stackTraceDepth: number = -1; // unlimited
 
 	getOrAssignThreadId(context: string): number {
 		let threadId = this.contextToThreadId.get(context);
@@ -561,6 +569,9 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			this.tcfLogger.setPrefix("");
 
 		}
+		if (args.stackTraceDepth !== undefined && args.stackTraceDepth > 0) {
+			this.stackTraceDepth = args.stackTraceDepth;
+		}
 		this.tcfLogger.setDebugTCFMessages(args.debugTCFMessages || (args.internal?.debugTCFMessages || DEFAULT_DEBUG_TCF_MESSAGES));
 		if (args.internal?.commandToken) {
 			this.tcfClient.setCommandToken(args.internal.commandToken);
@@ -655,8 +666,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			this.sendResponse(response);
 			return;
 		}
-		const contextData = await this.tcfClient.getStackTrace(contextID, cancellationToken);
-		contextData.reverse(); //users generally expect to the the last stack first in the UI
+		const contextData = await this.tcfClient.getStackTrace(contextID, cancellationToken, this.stackTraceDepth);
 
 		this.stackMemoryRefence.clear(); //get rid of old context IDs and addresses
 		let stackFrames = [];

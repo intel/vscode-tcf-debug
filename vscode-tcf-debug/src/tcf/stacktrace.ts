@@ -3,8 +3,10 @@ Copyright (C) 2022, 2023 Intel Corporation
 SPDX-License-Identifier: MIT
 */
 import { TCFCodeAreaLineNumbers } from './linenumbers';
-import { asNullableArray, asStringNullableArray, handleError, handleErrorBuffer, PromiseError, PromiseSuccess, SimpleCommand, validateJSON, ValidatingCommand } from './tcfutils';
+import { asNullableArray, asStringNullableArray, handleError, handleErrorBuffer, PromiseError, PromiseSuccess, SimpleCommand, validateJSON, ValidatingCommand, toBuffer } from './tcfutils';
 import * as validateTCFContextDataStackTrace from './validators/validate-TCFContextDataStackTrace';
+
+const DEFAULT_STACKTRACE_RANGE = 20;
 
 abstract class StackTraceCommand<T> extends SimpleCommand<T> {
     constructor() {
@@ -61,6 +63,42 @@ export class GetChildrenStackTraceCommand extends StackTraceValidatingCommand<st
         return asStringNullableArray(json);
     }
 }
+
+//see https://download.eclipse.org/tools/tcf/tcf-docs/TCF%20Service%20-%20Stack%20Trace.html#CmdGetChildrenRange
+export class GetChildrenRangeStackTraceCommand extends StackTraceValidatingCommand<string[] | null> {
+    parentContextId: string;
+    startRange: number;
+    endRange: number;
+
+    constructor(parentcontextId: string, start: number = 0, end: number = DEFAULT_STACKTRACE_RANGE - 1) {
+        super();
+        this.parentContextId = parentcontextId;
+        this.startRange = start;
+        this.endRange = end;
+    }
+
+    debugDescription(tokenID: number): string {
+        return `${super.debugDescription(tokenID)}/${this.command()}/${this.parentContextId}-${this.startRange}:${this.endRange}`;
+    }
+
+    command(): string {
+        return "getChildrenRange";
+    }
+
+    arguments(): any {
+        return undefined; //custom serialization
+    }
+
+    override cast(json: any): string[] | null {
+        return asStringNullableArray(json);
+    }
+
+    toBuffer(token: string): Buffer {
+        return toBuffer(["C", token, this.service(), this.command(), JSON.stringify(this.parentContextId), JSON.stringify(this.startRange), JSON.stringify(this.endRange)]);
+    }
+
+}
+
 
 /* eslint-disable @typescript-eslint/naming-convention */
 export interface TCFContextDataStackTrace {

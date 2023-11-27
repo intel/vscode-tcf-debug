@@ -1,5 +1,13 @@
 ## Release notes
 
+### 0.2.8
+
+* Loads fewer stack trace items based on the optional `stackTraceDepth` launch config.
+  This massively reduces the number of messages (and time) it takes to load a stack trace
+  with the disadvantage of loading only part of it.
+  This disadvantage will be fixed in the future once supportsDelayedStackTraceLoading is
+  implemented.
+
 ### 0.2.7
 
 * Shows CPU registers in the Registers scope.

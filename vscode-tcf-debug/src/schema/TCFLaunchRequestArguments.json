@@ -65,6 +65,10 @@
             "description": "File path where TCF messages will be recorded into",
             "type": "string"
         },
+        "stackTraceDepth": {
+            "description": "Maximum number of stack frames that a stackTrace can have. Unlimited, if not defined.",
+            "type": "number"
+        },
         "timeout": {
             "default": 10000,
             "description": "Debug commands timeout (milliseconds)",
