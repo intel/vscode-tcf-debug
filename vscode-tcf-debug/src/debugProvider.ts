@@ -476,6 +476,10 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		this.enabledPathMapper = enablePathMapper;
 	}
 
+	/* test only */ getTcfClient() : TCFClient {
+		return this.tcfClient;
+	}
+
 	protected onHandledEvent(service: string, event: string, datas: Buffer[]): boolean {
 		let handled = false;
 		this.repls.forEach(r => {
