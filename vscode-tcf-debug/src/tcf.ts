@@ -64,7 +64,7 @@ export class SmallCommandStamper extends AbstractCommandStamper {
 }
 
 type ResponseParser = (response: Buffer[], success: PromiseSuccess<any>, error: PromiseError<any>) => void;
-type PromiseResult = { success: PromiseSuccess<any>, error: PromiseError<any>, parseResponse: ResponseParser };
+type PromiseResult = { service: string, command: string, success: PromiseSuccess<any>, error: PromiseError<any>, parseResponse: ResponseParser };
 
 const DEFAULT_COMMAND_TIMEOUT_MS = 10 * 1000; //10 seconds
 
@@ -204,6 +204,15 @@ export abstract class AbstractTCFClient {
 
     /**
      *
+     * @param contextID Step over a single instruction.
+     * If the instruction is a function call then don't stop until the function returns.
+     */
+    async nextInstruction(contextID: string | undefined) {
+        await this.resume(contextID, Modes.nextInstruction);
+    }
+
+    /**
+     *
      * @param contextID if undefined, resume everything. Otherwise resume the given context 
      * until control reaches instruction that belongs to a different line of source code
      */
@@ -238,6 +247,11 @@ export abstract class AbstractTCFClient {
     }
 
     private async resume(contextID: string | undefined, mode: Modes) {
+        if (contextID && !this.getSuspendableContexts().includes(contextID)) {
+            //TODO: trying to resume a non-resumable context. Maybe... we should just send the command?
+            throw new Error(`${contextID} is not a suspendable context. Will not send any resume command.`);
+        }
+
         //TODO: resume only what was actually suspended
         const errors = [];
         for (const context of this.getSuspendableContexts()) {
@@ -304,7 +318,7 @@ export abstract class AbstractTCFClient {
 
     waitEvent(service: string, event: string): Promise<Buffer[]> {
         var p = new Promise((success, error) => {
-            this.addAsync(this.eventKey(service, event), { success, error, parseResponse: (buffers: Buffer[], success, error) => { success(buffers); } });
+            this.addAsync(this.eventKey(service, event), { service, command: event, success, error, parseResponse: (buffers: Buffer[], success, error) => { success(buffers); } });
         });
 
         const self = this;
@@ -330,7 +344,7 @@ export abstract class AbstractTCFClient {
         const token = this.tokenIdGenerator.createToken(c);
 
         var promiseconnectSuccess = new Promise((success, error) => {
-            this.addAsync(token, { success, error, parseResponse: c.result.bind(c) });
+            this.addAsync(token, { service: c.service(), command: c.command(), success, error, parseResponse: c.result.bind(c) });
         });
 
         this.send(c.toBuffer(token));
@@ -512,6 +526,14 @@ export abstract class AbstractTCFClient {
                             if (z) {
                                 this.console.received(`⬅️ Parsing async result ${resultTokenStr}`);
                                 z.parseResponse(resultRest, z.success, z.error);
+
+                                if ("RunControl" === z.service && "getContext" === z.command) {
+                                    const resultData = asNullableTCFContextData(JSON.parse(resultRest[1].toString()));
+                                    if (resultData !== null) {
+                                        this.contextInfo[resultData.ID] = resultData;
+                                    }
+                                }
+
                             } else {
                                 this.console.error(`Received unexpected response. No command with this token was sent: ${resultTokenStr}`);
                                 //TODO: Other alternatives on unexpected replies would be to just disconnect or throw and error here.
@@ -519,12 +541,6 @@ export abstract class AbstractTCFClient {
                         }
 
                         this.console.received(`⬅️ Received Result ${resultTokenStr} ${JSON.stringify(resultRest.map(x => x.toString()))}`);
-                        if (resultToken.toString().match("RunControl/[0-9]*/getContext/")) {
-                            const resultData = asNullableTCFContextData(JSON.parse(resultRest[1].toString()));
-                            if (resultData !== null) {
-                                this.contextInfo[resultData.ID] = resultData;
-                            }
-                        }
                         break;
                     default:
                         throw new Error("Got unexpected data" + data[0]);

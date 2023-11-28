@@ -1,7 +1,7 @@
 "use strict";
 module.exports = validate20;
 module.exports.default = validate20;
-const schema22 = {"$schema":"http://json-schema.org/draft-07/schema#","properties":{"__restart":{"description":"Arbitrary data from the previous, restarted session.\nThe data is sent as the `restart` attribute of the `terminated` event.\nThe client should leave the data intact."},"breakpointPrefix":{"type":"string"},"debugTCFMessages":{"description":"Show TCF messages in the debug console","type":"boolean"},"host":{"default":"localhost","description":"(Remote) TCF agent host","type":"string"},"internal":{"properties":{"commandToken":{"default":"default","description":"Normally TCF command tokens are very terse identifiers which make manually reading the TCF messages hard.\nIf this property is set to `debug` a more verbose command token is used which makes the reply easier to\nunderstand.","enum":["debug","default"],"type":"string"},"debugTCFMessages":{"description":"Show TCF messages in the debug console","type":"boolean"}},"type":"object"},"noDebug":{"description":"If true, the launch request should launch the program without enabling debugging.","type":"boolean"},"pathMapper":{"default":"return function (path, context) { return path; }","description":"A Javascript function to map a local path to the debugger path","type":"string"},"playback":{"description":"File path with recorded TCF message which will be used to replay TCF messages (host and port will be ignored)","type":"string"},"playbackFlag":{"properties":{"consumeEventsRepliesEagerly":{"description":"The mock socket is not strict about ordering. Most replies are delayed until\na command actually comes in. This is designed to accomodate timing variations in how\nthe user / code may invoke commands.\n\nIf this flag is `true` it consumes events and replies eagerly. This may break\nmost scenarios but may also be preferable in other situations (eg. specific tests).","type":"boolean"}},"type":"object"},"port":{"default":1534,"description":"TCF connection port","type":"number"},"record":{"description":"File path where TCF messages will be recorded into","type":"string"},"timeout":{"default":10000,"description":"Debug commands timeout (milliseconds)","type":"number"}},"type":"object"};
+const schema22 = {"$schema":"http://json-schema.org/draft-07/schema#","properties":{"__restart":{"description":"Arbitrary data from the previous, restarted session.\nThe data is sent as the `restart` attribute of the `terminated` event.\nThe client should leave the data intact."},"breakpointPrefix":{"type":"string"},"debugTCFMessages":{"description":"Show TCF messages in the debug console","type":"boolean"},"host":{"default":"localhost","description":"(Remote) TCF agent host","type":"string"},"internal":{"properties":{"commandToken":{"default":"default","description":"Normally TCF command tokens are very terse identifiers which make manually reading the TCF messages hard.\nIf this property is set to `debug` a more verbose command token is used which makes the reply easier to\nunderstand.","enum":["debug","default"],"type":"string"},"debugTCFMessages":{"description":"Show TCF messages in the debug console","type":"boolean"}},"type":"object"},"noDebug":{"description":"If true, the launch request should launch the program without enabling debugging.","type":"boolean"},"pathMapper":{"default":"return function (path, context) { return path; }","description":"A Javascript function to map a local path to the debugger path","type":"string"},"playback":{"description":"File path with recorded TCF message which will be used to replay TCF messages (host and port will be ignored)","type":"string"},"playbackFlag":{"properties":{"consumeEventsRepliesEagerly":{"description":"The mock socket is not strict about ordering. Most replies are delayed until\na command actually comes in. This is designed to accomodate timing variations in how\nthe user / code may invoke commands.\n\nIf this flag is `true` it consumes events and replies eagerly. This may break\nmost scenarios but may also be preferable in other situations (eg. specific tests).","type":"boolean"}},"type":"object"},"port":{"default":1534,"description":"TCF connection port","type":"number"},"record":{"description":"File path where TCF messages will be recorded into","type":"string"},"stackTraceDepth":{"description":"Maximum number of stack frames that a stackTrace can have. Unlimited, if not defined.","type":"number"},"timeout":{"default":10000,"description":"Debug commands timeout (milliseconds)","type":"number"}},"type":"object"};
 
 function validate20(data, {instancePath="", parentData, parentDataProperty, rootData=data}={}){
 let vErrors = null;
@@ -174,17 +174,31 @@ else {
 var valid0 = true;
 }
 if(valid0){
-if(data.timeout !== undefined){
-let data13 = data.timeout;
+if(data.stackTraceDepth !== undefined){
+let data13 = data.stackTraceDepth;
 const _errs27 = errors;
 if(!((typeof data13 == "number") && (isFinite(data13)))){
-validate20.errors = [{instancePath:instancePath+"/timeout",schemaPath:"#/properties/timeout/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+validate20.errors = [{instancePath:instancePath+"/stackTraceDepth",schemaPath:"#/properties/stackTraceDepth/type",keyword:"type",params:{type: "number"},message:"must be number"}];
 return false;
 }
 var valid0 = _errs27 === errors;
 }
 else {
 var valid0 = true;
+}
+if(valid0){
+if(data.timeout !== undefined){
+let data14 = data.timeout;
+const _errs29 = errors;
+if(!((typeof data14 == "number") && (isFinite(data14)))){
+validate20.errors = [{instancePath:instancePath+"/timeout",schemaPath:"#/properties/timeout/type",keyword:"type",params:{type: "number"},message:"must be number"}];
+return false;
+}
+var valid0 = _errs29 === errors;
+}
+else {
+var valid0 = true;
+}
 }
 }
 }

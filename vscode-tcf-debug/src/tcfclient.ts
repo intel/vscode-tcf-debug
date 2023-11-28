@@ -7,7 +7,7 @@ import { BreakpointData, BreakpointStatus, InstanceStatusData, asBreakpointData,
 import { EvaluateExpressionsCommand, EvaluateResult, GetChildrenExpressionCommand } from "./tcf/expressions";
 import { MapToSourceLineNumbersCommand, TCFCodeAreaLineNumbers } from "./tcf/linenumbers";
 import { asNullableTCFContextData, asTCFContextData, ContextSuspendedData, GetChildrenRunControlCommand, GetContextRunControlCommand, GetStateRunControlCommand, parseContextSuspended, TCFContextData, TCFStateData } from "./tcf/runcontrol";
-import { GetChildrenStackTraceCommand, GetContextStackTraceCommand, TCFContextDataStackTrace } from "./tcf/stacktrace";
+import { GetChildrenRangeStackTraceCommand, GetChildrenStackTraceCommand, GetContextStackTraceCommand, TCFContextDataStackTrace } from "./tcf/stacktrace";
 import { FindByAddrSymbolsCommand, GetContextSymbolsCommand, TCFTypeClass } from "./tcf/symbols";
 import { asArray, asNullableArray, asString, asStringArray, CancellationFunction, EMPTY_BUFFER, InterruptedError, parseResponse, responseLengthAbout, SimpleCommand, TCFPartialResultError } from "./tcf/tcfutils";
 import { DefaultVariableHelper } from "./variables/helper";
@@ -158,31 +158,36 @@ export abstract class TCFClient extends AbstractTCFClient {
             .flat();
     }
 
-    async getStackTrace(contextID: string, cancellationToken: CancellationFunction): Promise<{
+    async getStackTrace(contextID: string, cancellationToken: CancellationFunction, stackTraceDepth: number = -1): Promise<{
         context: TCFContextDataStackTrace;
         mapToSource: TCFCodeAreaLineNumbers | undefined;
     }[]> {
-        let children: string[] = await this.sendCommand(new GetChildrenStackTraceCommand(contextID)) || [];
-        let childContexts: TCFContextDataStackTrace[] = await this.sendChunkedCommand(children, x => new GetContextStackTraceCommand(x));
-
+        let stackFrames: string[] = [];
+        if (stackTraceDepth === -1) {
+            stackFrames = await this.sendCommand(new GetChildrenStackTraceCommand(contextID)) || [];
+        } else {
+            stackFrames = await this.sendCommand(new GetChildrenRangeStackTraceCommand(contextID, stackTraceDepth)) || [];
+        }
+        
+        let stackFramesContexts: TCFContextDataStackTrace[] = await this.sendChunkedCommand(stackFrames, x => new GetContextStackTraceCommand(x));
         let result = [];
 
         outerfor:
-        for (const childContext of childContexts) {
+        for (const stackFrameContext of stackFramesContexts) {
             if (cancellationToken()) {
                 throw new InterruptedError("Cancelled");
             }
-            if (childContext?.CodeArea) {
-                const sourceLine = childContext?.CodeArea;
+            if (stackFrameContext?.CodeArea) {
+                const sourceLine = stackFrameContext?.CodeArea;
                 if (sourceLine?.File && sourceLine?.SLine) {
-                    result.push({ context: childContext, mapToSource: sourceLine });
+                    result.push({ context: stackFrameContext, mapToSource: sourceLine });
                     //TODO: Note we are breaking early. It is possible we still need to get the symbol info to update the context Name (since this goes to the UI?)
                     continue outerfor;
                 }
             }
-            if (childContext?.IP) {
+            if (stackFrameContext?.IP) {
                 try {
-                    const symbol = await this.sendCommand(new FindByAddrSymbolsCommand(contextID, childContext.IP));
+                    const symbol = await this.sendCommand(new FindByAddrSymbolsCommand(contextID, stackFrameContext.IP));
                     if (symbol) {
                         const symbolContext = await this.sendCommand(new GetContextSymbolsCommand(symbol));
                         if (symbolContext) {
@@ -190,7 +195,7 @@ export abstract class TCFClient extends AbstractTCFClient {
                                 //XXX: hack: let's just replace the returned Name
                                 //TODO: Get rid of the above hack and return this info properly... Not even entirely sure what it's supposed to do but presumably we display this Name in the VSCode stacktrace UI
                                 if (symbolContext.Name) {
-                                    childContext.Name = symbolContext.Name;
+                                    stackFrameContext.Name = symbolContext.Name;
                                 }
                             }
 
@@ -200,28 +205,31 @@ export abstract class TCFClient extends AbstractTCFClient {
                     console.log("Error " + JSON.stringify(e));
                 }
 
-                let sourceLines: TCFCodeAreaLineNumbers[] | null = await this.sendCommand(new MapToSourceLineNumbersCommand(contextID /*context.ParentID*/, childContext?.IP - 1, childContext?.IP));
+                let sourceLines: TCFCodeAreaLineNumbers[] | null = await this.sendCommand(new MapToSourceLineNumbersCommand(contextID /*context.ParentID*/, stackFrameContext?.IP - 1, stackFrameContext?.IP));
                 for (const sourceLine of sourceLines || []) {
                     if (sourceLine?.File && sourceLine?.SLine) {
-                        result.push({ context: childContext, mapToSource: sourceLine });
+                        result.push({ context: stackFrameContext, mapToSource: sourceLine });
                         continue outerfor;
                     }
                 }
             }
-            if (childContext?.RP) {
-                let sourceLines: TCFCodeAreaLineNumbers[] | null = await this.sendCommand(new MapToSourceLineNumbersCommand(contextID /*context.ParentID*/, childContext?.RP - 1, childContext?.RP));
+            if (stackFrameContext?.RP) {
+                let sourceLines: TCFCodeAreaLineNumbers[] | null = await this.sendCommand(new MapToSourceLineNumbersCommand(contextID /*context.ParentID*/, stackFrameContext?.RP - 1, stackFrameContext?.RP));
                 for (const sourceLine of sourceLines || []) {
                     if (sourceLine?.File && sourceLine?.SLine) {
-                        result.push({ context: childContext, mapToSource: sourceLine });
+                        result.push({ context: stackFrameContext, mapToSource: sourceLine });
                         continue outerfor;
                     }
                 }
             }
 
             //fallback
-            result.push({ context: childContext, mapToSource: undefined });
+            result.push({ context: stackFrameContext, mapToSource: undefined });
         }
 
+        if (stackTraceDepth === -1) {
+            result.reverse();
+        }
         return result;
     }
 

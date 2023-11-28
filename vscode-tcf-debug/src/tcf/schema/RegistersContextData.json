@@ -1,0 +1,37 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "properties": {
+        "Description": {
+            "type": "string"
+        },
+        "ID": {
+            "type": "string"
+        },
+        "Name": {
+            "type": "string"
+        },
+        "ParentID": {
+            "type": "string"
+        },
+        "ProcessID": {
+            "type": "string"
+        },
+        "ReadOnce": {
+            "type": "boolean"
+        },
+        "Readable": {
+            "type": "boolean"
+        },
+        "Role": {
+            "type": "string"
+        },
+        "Size": {
+            "type": "number"
+        }
+    },
+    "required": [
+        "ID"
+    ],
+    "type": "object"
+}
+

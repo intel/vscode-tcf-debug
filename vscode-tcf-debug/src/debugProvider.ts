@@ -35,6 +35,7 @@ import { DisassembleDisassemblyCommand, DisassemblyParameters, GetCapabilitiesDi
 import { MockFlags } from './mocksocket';
 import { MappedLoader, PathLoader } from './loader';
 import { Repl, ReplProvider } from './repl';
+import { GetChildrenRegistersCommand, GetContextRegistersCommand, GetRegistersCommand } from './tcf/registers';
 
 export interface InternalLaunchArguments {
 	/**
@@ -55,6 +56,9 @@ export interface InternalLaunchArguments {
 //see package.json configurationAttributes which is the JSON schema (aka TCFLaunchRequestArguments.json) for this object
 //Note that '$ref' is not supported by vscode so it must be generated like this (--refs = false):
 // npx typescript-json-schema --required ./tsconfig.json --refs false TCFLaunchRequestArguments  -o src/schema/TCFLaunchRequestArguments.json
+// then
+// npx ajv compile --code-lines --allowUnionTypes -s src/schema/TCFLaunchRequestArguments.json -o src/validators/validate-TCFLaunchRequestArguments.js
+// npx tsc --allowJs --declaration --emitDeclarationOnly ./src/validators/*js  --outDir ./src/validators/
 export interface TCFLaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
 	/**
 	 * (Remote) TCF agent host
@@ -88,6 +92,10 @@ export interface TCFLaunchRequestArguments extends DebugProtocol.LaunchRequestAr
 	 */
 	pathMapper?: string;
 	internal?: InternalLaunchArguments;
+	/**
+	 * Maximum number of stack frames that a stackTrace can have. Unlimited, if not defined.
+	 */
+	stackTraceDepth?: number;
 }
 
 export function asLaunchRequestArguments(result: any): TCFLaunchRequestArguments {
@@ -313,6 +321,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 	protected contextToThreadId = new Map<string, number>();
 
 	protected enabledPathMapper: boolean;
+	protected stackTraceDepth: number = -1; // unlimited
 
 	getOrAssignThreadId(context: string): number {
 		let threadId = this.contextToThreadId.get(context);
@@ -475,6 +484,10 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		this.enabledPathMapper = enablePathMapper;
 	}
 
+	/* test only */ getTcfClient() : TCFClient {
+		return this.tcfClient;
+	}
+
 	protected onHandledEvent(service: string, event: string, datas: Buffer[]): boolean {
 		let handled = false;
 		this.repls.forEach(r => {
@@ -496,6 +509,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 
 		response.body.supportsCancelRequest = true;
 		response.body.supportsConfigurationDoneRequest = true;
+		response.body.supportsSteppingGranularity = true;
 		response.body.supportSuspendDebuggee = true;
 		response.body.supportTerminateDebuggee = true;
 		response.body.supportsSingleThreadExecutionRequests = true; //we can pause/resume a single CPU, surely?
@@ -506,7 +520,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected async launchRequest(response: DebugProtocol.LaunchResponse, args: TCFLaunchRequestArguments) {
+	protected async launchRequestAsync(response: DebugProtocol.LaunchResponse, args: TCFLaunchRequestArguments) {
 		this.tcfLogger.log("Launch request " + args);
 
 		try {
@@ -556,6 +570,9 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			this.tcfLogger.setPrefix("");
 
 		}
+		if (args.stackTraceDepth !== undefined && args.stackTraceDepth > 0) {
+			this.stackTraceDepth = args.stackTraceDepth;
+		}
 		this.tcfLogger.setDebugTCFMessages(args.debugTCFMessages || (args.internal?.debugTCFMessages || DEFAULT_DEBUG_TCF_MESSAGES));
 		if (args.internal?.commandToken) {
 			this.tcfClient.setCommandToken(args.internal.commandToken);
@@ -578,7 +595,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		}
 	}
 
-	protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments) {
+	protected async configurationDoneRequestAsync(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments) {
 		//NOTE: This is the last call after all the breakpoints have been set according to
 		// https://microsoft.github.io/debug-adapter-protocol/overview#configuring-breakpoint-and-exception-behavior
 		this.breakpointsManager.configurationDone();
@@ -650,8 +667,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			this.sendResponse(response);
 			return;
 		}
-		const contextData = await this.tcfClient.getStackTrace(contextID, cancellationToken);
-		contextData.reverse(); //users generally expect to the the last stack first in the UI
+		const contextData = await this.tcfClient.getStackTrace(contextID, cancellationToken, this.stackTraceDepth);
 
 		this.stackMemoryRefence.clear(); //get rid of old context IDs and addresses
 		let stackFrames = [];
@@ -800,7 +816,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		return this.breakpointPrefix + String(id);
 	}
 
-	protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
+	protected async setBreakPointsRequestAsync(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
 		const path = args.source.path as string;
 		//TODO: Note we are using args.lines (which is deprecated) instead of the more rich args.breakpoints but except column value for
 		// breakpoints we don't support any of the other breakpoint features (supportsConditionalBreakpoints, supportsHitConditionalBreakpoints, supportsLogPoints)
@@ -882,37 +898,57 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		}
 	}
 
-	protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
+	protected async nextRequestAsync(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
 		let contextID = this.threadIdToContext.get(args.threadId);
-		//TODO: handle args.singleThread && args.granularity
+		//TODO: handle args.singleThread
 		if (!contextID) {
 			logger.error(`Cound not continue unknown thread ${args.threadId}, continuing all of them`);
 			this.sendErrorResponse(response, ErrorCodes.nextError, `Next step failed. Unknown thread ${args.threadId}`);
 			return;
 		}
-		await this.tcfClient.next(contextID);
+		switch (args.granularity) {
+			case 'instruction':
+				await this.tcfClient.nextInstruction(contextID);
+				break;
+			case 'line':
+				await this.tcfClient.next(contextID);
+				break;
+			default:
+				//note granularity may be undefined here
+				if (args.granularity) {
+					logger.error(`Will execute step over with 'line' granularity even if ${args.granularity} was requested; TCF does not support this granularity`);
+				}
+				await this.tcfClient.next(contextID);
+				break;
+		}
 		this.sendResponse(response);
 	}
 
-	protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
+	protected async stepInRequestAsync(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
 		let contextID = this.threadIdToContext.get(args.threadId);
-		//TODO: handle args.singleThread, args.granularity && args.targetId
+		//TODO: handle args.singleThread
 		if (!contextID) {
 			logger.error(`Cound not continue unknown thread ${args.threadId}, ignore the call`);
 			this.sendErrorResponse(response, ErrorCodes.stepInError, `Step in failed. Unknown thread ${args.threadId}`);
 			return;
 		}
+		if (args.granularity && args.granularity !== "line") {
+			logger.error(`Will execute step in with 'line' granularity even if ${args.granularity} was requested; TCF does not support this granularity`);
+		}
 		await this.tcfClient.stepIn(contextID);
 		this.sendResponse(response);
 	}
 
-	protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
+	protected async stepOutRequestAsync(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
 		let contextID = this.threadIdToContext.get(args.threadId);
-		//TODO: handle args.singleThread && args.granularity
+		//TODO: handle args.singleThread
 		if (!contextID) {
 			logger.error(`Could not continue unknown thread ${args.threadId}, ignore the call`);
 			this.sendErrorResponse(response, ErrorCodes.stepOutError, `Step out failed. Unknown thread ${args.threadId}`);
 			return;
+		}
+		if (args.granularity && args.granularity !== "line") {
+			logger.error(`Will execute step out with 'line' granularity even if ${args.granularity} was requested; TCF does not support this granularity`);
 		}
 		await this.tcfClient.stepOut(contextID);
 		this.sendResponse(response);
@@ -987,6 +1023,12 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			//const variableInfo = this.decodeVariableValue(variableName, v);
 			const r = new Variable(clientVariable.name() ?? "", await clientVariable.displayValue() || "");
 			const rd = r as DebugProtocol.Variable;
+			if (clientVariable.isRegister()) {
+				//not sure how to best present the fact that this variable is stored in a register...
+				rd.presentationHint = {
+					visibility: 'internal'
+				};
+			}
 			rd.type = variableType;
 			const children = await clientVariable.getChildren();
 			rd.indexedVariables = children?.length; //TODO: a smaller method childrenSize may help here
@@ -1017,7 +1059,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
+	protected async variablesRequestAsync(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
 		//TODO: add support for the args filtering, start and count.
 
 		if (this.isSubVariableReference(args.variablesReference)) {
@@ -1049,15 +1091,37 @@ export class TCFDebugSession extends LifetimeDebugSession {
 
 		let [ctx, stack] = this.getStackFrameDetails(args.variablesReference);
 
+		if (this.isRegisterScopeVariableReference(args.variablesReference)) {
+			//registers!
+
+			//TODO: add recursion, we could have a whole tree of registers
+			const regs = await this.tcfClient.sendCommand(new GetChildrenRegistersCommand(ctx));
+
+			if (regs) {
+				const rctxs = await Promise.all(regs.map(r => this.tcfClient.sendCommand(new GetContextRegistersCommand(r))));
+				const rvalues = await Promise.all(regs.map(r => this.tcfClient.sendCommand(new GetRegistersCommand(r))));
+
+				let vars = [];
+				for (let i = 0; i < regs.length; i++) {
+					const name = rctxs[i]?.Name ?? `Register ${regs[i]}`;
+					const value = "0x" + rvalues[i].toString("hex");
+					const v = new Variable(name, value);
+					vars.push(v);
+				}
+				response.body = {
+					variables: vars
+				};
+			}
+
+			this.sendResponse(response);
+			return;
+		}
+
 		try {
 			const vars = await this.tcfClient.getStackVariables(ctx, stack);
 
 			const resultVars = [];
 			for (const v of vars) {
-				//show register vars only in register scope
-				if (this.isLocalScopeVariableReference(args.variablesReference) === v.isRegister()) {
-					continue;
-				}
 				if (v.name() === undefined) {
 					continue;
 				}
