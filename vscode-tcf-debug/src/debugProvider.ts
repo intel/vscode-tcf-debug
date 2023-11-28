@@ -509,6 +509,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 
 		response.body.supportsCancelRequest = true;
 		response.body.supportsConfigurationDoneRequest = true;
+		response.body.supportsSteppingGranularity = true;
 		response.body.supportSuspendDebuggee = true;
 		response.body.supportTerminateDebuggee = true;
 		response.body.supportsSingleThreadExecutionRequests = true; //we can pause/resume a single CPU, surely?
@@ -519,7 +520,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected async launchRequest(response: DebugProtocol.LaunchResponse, args: TCFLaunchRequestArguments) {
+	protected async launchRequestAsync(response: DebugProtocol.LaunchResponse, args: TCFLaunchRequestArguments) {
 		this.tcfLogger.log("Launch request " + args);
 
 		try {
@@ -594,7 +595,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		}
 	}
 
-	protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments) {
+	protected async configurationDoneRequestAsync(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments) {
 		//NOTE: This is the last call after all the breakpoints have been set according to
 		// https://microsoft.github.io/debug-adapter-protocol/overview#configuring-breakpoint-and-exception-behavior
 		this.breakpointsManager.configurationDone();
@@ -815,7 +816,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		return this.breakpointPrefix + String(id);
 	}
 
-	protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
+	protected async setBreakPointsRequestAsync(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
 		const path = args.source.path as string;
 		//TODO: Note we are using args.lines (which is deprecated) instead of the more rich args.breakpoints but except column value for
 		// breakpoints we don't support any of the other breakpoint features (supportsConditionalBreakpoints, supportsHitConditionalBreakpoints, supportsLogPoints)
@@ -897,37 +898,57 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		}
 	}
 
-	protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
+	protected async nextRequestAsync(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
 		let contextID = this.threadIdToContext.get(args.threadId);
-		//TODO: handle args.singleThread && args.granularity
+		//TODO: handle args.singleThread
 		if (!contextID) {
 			logger.error(`Cound not continue unknown thread ${args.threadId}, continuing all of them`);
 			this.sendErrorResponse(response, ErrorCodes.nextError, `Next step failed. Unknown thread ${args.threadId}`);
 			return;
 		}
-		await this.tcfClient.next(contextID);
+		switch (args.granularity) {
+			case 'instruction':
+				await this.tcfClient.nextInstruction(contextID);
+				break;
+			case 'line':
+				await this.tcfClient.next(contextID);
+				break;
+			default:
+				//note granularity may be undefined here
+				if (args.granularity) {
+					logger.error(`Will execute step over with 'line' granularity even if ${args.granularity} was requested; TCF does not support this granularity`);
+				}
+				await this.tcfClient.next(contextID);
+				break;
+		}
 		this.sendResponse(response);
 	}
 
-	protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
+	protected async stepInRequestAsync(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
 		let contextID = this.threadIdToContext.get(args.threadId);
-		//TODO: handle args.singleThread, args.granularity && args.targetId
+		//TODO: handle args.singleThread
 		if (!contextID) {
 			logger.error(`Cound not continue unknown thread ${args.threadId}, ignore the call`);
 			this.sendErrorResponse(response, ErrorCodes.stepInError, `Step in failed. Unknown thread ${args.threadId}`);
 			return;
 		}
+		if (args.granularity && args.granularity !== "line") {
+			logger.error(`Will execute step in with 'line' granularity even if ${args.granularity} was requested; TCF does not support this granularity`);
+		}
 		await this.tcfClient.stepIn(contextID);
 		this.sendResponse(response);
 	}
 
-	protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
+	protected async stepOutRequestAsync(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
 		let contextID = this.threadIdToContext.get(args.threadId);
-		//TODO: handle args.singleThread && args.granularity
+		//TODO: handle args.singleThread
 		if (!contextID) {
 			logger.error(`Could not continue unknown thread ${args.threadId}, ignore the call`);
 			this.sendErrorResponse(response, ErrorCodes.stepOutError, `Step out failed. Unknown thread ${args.threadId}`);
 			return;
+		}
+		if (args.granularity && args.granularity !== "line") {
+			logger.error(`Will execute step out with 'line' granularity even if ${args.granularity} was requested; TCF does not support this granularity`);
 		}
 		await this.tcfClient.stepOut(contextID);
 		this.sendResponse(response);
@@ -1038,7 +1059,7 @@ export class TCFDebugSession extends LifetimeDebugSession {
 		this.sendResponse(response);
 	}
 
-	protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
+	protected async variablesRequestAsync(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
 		//TODO: add support for the args filtering, start and count.
 
 		if (this.isSubVariableReference(args.variablesReference)) {

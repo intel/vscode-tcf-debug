@@ -108,6 +108,7 @@ export class SuspendRunControlCommand extends RunControlEmptyCommand {
 
 export enum Modes {
     normalExecution = 0,
+    nextInstruction = 1,
     nextLine = 3,
     stepIn = 4,
     stepOut = 5

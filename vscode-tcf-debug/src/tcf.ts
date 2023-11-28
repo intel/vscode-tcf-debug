@@ -204,6 +204,15 @@ export abstract class AbstractTCFClient {
 
     /**
      *
+     * @param contextID Step over a single instruction.
+     * If the instruction is a function call then don't stop until the function returns.
+     */
+    async nextInstruction(contextID: string | undefined) {
+        await this.resume(contextID, Modes.nextInstruction);
+    }
+
+    /**
+     *
      * @param contextID if undefined, resume everything. Otherwise resume the given context 
      * until control reaches instruction that belongs to a different line of source code
      */
@@ -238,6 +247,11 @@ export abstract class AbstractTCFClient {
     }
 
     private async resume(contextID: string | undefined, mode: Modes) {
+        if (contextID && !this.getSuspendableContexts().includes(contextID)) {
+            //TODO: trying to resume a non-resumable context. Maybe... we should just send the command?
+            throw new Error(`${contextID} is not a suspendable context. Will not send any resume command.`);
+        }
+
         //TODO: resume only what was actually suspended
         const errors = [];
         for (const context of this.getSuspendableContexts()) {

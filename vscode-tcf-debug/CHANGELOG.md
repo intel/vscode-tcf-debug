@@ -2,6 +2,7 @@
 
 ### 0.2.8
 
+* Supports instruction level granularity in step over.
 * Loads fewer stack trace items based on the optional `stackTraceDepth` launch config.
   This massively reduces the number of messages (and time) it takes to load a stack trace
   with the disadvantage of loading only part of it.
