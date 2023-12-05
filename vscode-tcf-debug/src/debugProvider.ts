@@ -674,17 +674,27 @@ export class TCFDebugSession extends LifetimeDebugSession {
 
 		for (const c of contextData) {
 			let source = undefined;
-			if (c.mapToSource?.Dir && c.mapToSource?.File) {
-				const separator = c.mapToSource.Dir.includes(path.posix.sep) ? path.posix.sep : path.sep;
-				const filePath = this.convertDebuggerPathToClient(c.mapToSource.Dir + separator + c.mapToSource.File);
+			if (c.mapToSource?.File) {
+				let stackPath;
+				if (c.mapToSource.Dir) {
+					const separator = c.mapToSource.Dir.includes(path.posix.sep) ? path.posix.sep : path.sep;
+					stackPath = c.mapToSource.Dir + separator + c.mapToSource.File;
+				} else {
+					stackPath = c.mapToSource.File;
+				}
+				const filePath = this.convertDebuggerPathToClient(stackPath);
+
 				//UI tweak: to avoid long paths, only add the full path when it's actually on disk on the user machine. otherwise show just the file name with no path
 				try {
 					await promises.stat(filePath);
-					//we asume file exists
-					source = new Source(c.mapToSource.File, filePath);
+					//we asume file exists, try to find the name
+					const realpath = await promises.realpath(filePath);
+					const fileName = path.basename(realpath);
+					source = new Source(fileName, filePath);
 				} catch (err) {
-					//we assume file does not exist, show just the file name
-					source = new Source(c.mapToSource.File);
+					//we assume file does not exist, show just the file name we got
+					const fileName = path.basename(filePath);
+					source = new Source(fileName, filePath);
 				}
 
 			}
