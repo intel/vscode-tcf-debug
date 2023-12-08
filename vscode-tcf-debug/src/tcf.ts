@@ -2,7 +2,7 @@
 Copyright (C) 2022, 2023 Intel Corporation
 SPDX-License-Identifier: MIT
 */
-import { split, splitBuffer, SimpleCommand, PromiseSuccess, PromiseError, TimeoutError, EMPTY_BUFFER, TCF_END_OF_PACKET_MARKER } from './tcf/tcfutils';
+import { split, splitBuffer, SimpleCommand, PromiseSuccess, PromiseError, TimeoutError, EMPTY_BUFFER, TCF_END_OF_PACKET_MARKER, ServiceNotSupportedError } from './tcf/tcfutils';
 import { TCFContextData, SuspendRunControlCommand, ResumeRunControlCommand, GetContextRunControlCommand, Modes, asNullableTCFContextData, GetChildrenRunControlCommand } from './tcf/runcontrol';
 import { AddBreakpointsCommand, BreakpointData, RemoveBreakpointsCommand, SetBreakpointsCommand } from './tcf/breakpoints';
 import { HelloLocatorEvent, parseHelloLocatorEvent } from './tcf/locator';
@@ -78,6 +78,7 @@ export abstract class AbstractTCFClient {
     playbackFlags: MockFlags = {};
     tokenIdGenerator: SimpleCommandStamper;
     commandTimeout: number = DEFAULT_COMMAND_TIMEOUT_MS;
+    supportedServices: string[] | null = null;
 
     constructor(logger: TCFLogger, tokenIdGenerator: SimpleCommandStamper) {
         this.console = logger;
@@ -341,6 +342,10 @@ export abstract class AbstractTCFClient {
     }
 
     sendCommand<T>(c: SimpleCommand<T>): Promise<T> {
+        if (!this.supportedServices?.includes(c.service())){
+            return Promise.reject(new ServiceNotSupportedError(`Service ${c.service()} not supported by remote TCF`));
+        }
+
         const token = this.tokenIdGenerator.createToken(c);
 
         var promiseconnectSuccess = new Promise((success, error) => {
@@ -389,10 +394,10 @@ export abstract class AbstractTCFClient {
         this.send(hello.toBuffer());
         const r = await this.waitEvent(hello.service(), hello.event()); //using the hello methods to avoid hardcoding the service/event names
 
-        const supportedServices = parseHelloLocatorEvent(r); //may throw
+        this.supportedServices = parseHelloLocatorEvent(r); //may throw
 
         let contexts: string[];
-        if (supportedServices?.includes(CONTEXT_QUERY_SERVICE)) {
+        if (this.supportedServices?.includes(CONTEXT_QUERY_SERVICE)) {
             contexts = await this.sendCommand(new QueryCommand("*"));
         } else {
             //fallback to RunControl

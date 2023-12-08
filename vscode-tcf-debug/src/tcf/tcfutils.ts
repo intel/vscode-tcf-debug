@@ -258,6 +258,12 @@ export class InterruptedError extends Error {
     }
 }
 
+export class ServiceNotSupportedError extends Error {
+    constructor(message?: string) {
+        super(message);
+    }
+}
+
 export class TimeoutError extends Error {
     constructor(message?: string) {
         super(message);
