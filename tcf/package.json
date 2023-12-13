@@ -1,6 +1,6 @@
 {
   "name": "@intel/tcf",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "TCF client library.",
   "main": "./out/tcf-all.js",
   "types": "./out/tcf-all.d.ts",
