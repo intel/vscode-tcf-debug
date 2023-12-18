@@ -1,5 +1,10 @@
 ## Release notes
 
+### 0.2.8
+
+* Fix source file not found when TCFCodeAreaLineNumbers.File has absolute path
+* Maintenance
+
 ### 0.2.7
 
 * Shows CPU registers in the `Registers` scope.

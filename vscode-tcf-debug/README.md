@@ -70,6 +70,11 @@ but you can also manually configure the following parameters (default values sho
 
 ## Release Notes
 
+### 0.2.8
+
+* Fix source file not found when TCFCodeAreaLineNumbers.File has absolute path
+* Maintenance
+
 ### 0.2.7
 
 * Shows CPU registers in the `Registers` scope.
