@@ -11,7 +11,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Build tcf
         run: |
           cd tcf
@@ -26,7 +26,7 @@ jobs:
           npm run package
           npm pack
       - name: Save VSIX
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v3.0
         with:
           name: vscode-tcf-debug.vsix
           path: vscode-tcf-debug/*vsix
