@@ -35,7 +35,7 @@ jobs:
       - name: Attest Build Provenance
         uses: actions/attest-build-provenance@897ed5eab6ed058a474202017ada7f40bfa52940 # v1.0.0
         with:
-          subject-path: 'vscode-tcf-debug.vsix'
+          subject-path: 'vscode-tcf-debug/vscode-tcf-debug.vsix'
       - name: Run tests
         run: |
           cd tests
