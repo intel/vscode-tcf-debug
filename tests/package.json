@@ -32,12 +32,12 @@
     "coverage": "npx nyc --temp-dir tests/.nyc_output --silent npx mocha ./out/test/unit/suite && npx nyc --temp-dir tests/.nyc_output report --reporter=cobertura --reporter=text --report-dir tests/coverage"
   },
   "devDependencies": {
-    "@types/mocha": "^10.0.1",
+    "@types/mocha": "^10.0.6",
     "@types/node": "20.x",
     "@typescript-eslint/eslint-plugin": "^6.1.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.46.0",
-    "mocha": "^10.2.0",
+    "mocha": "^10.8.2",
     "nyc": "^15.1.0",
     "typescript": "^5.1.6"
   },
