@@ -24,9 +24,6 @@
     "tcf-dap",
     "vscode-extension"
   ],
-  "files": [
-    "vscode-tcf-debug.vsix"
-  ],
   "author": "ebold",
   "contributors": [
     {
