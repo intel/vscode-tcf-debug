@@ -449,6 +449,11 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			//single context hit, find the corresponding threadId
 			const context = contexts.values().next().value;
 
+			if (!context) {
+				this.console.log(`No valid context found for breakpoint ${breakpointID}. Ignoring`);
+				return;
+			}
+
 			void (this.verifyInlinedBreakpoint(context, breakpointTcfId)); //TODO: Should this be await-ed instead of ignored with the void operator?
 
 			//NOTE: *If* we don't know the thread ID, it may be a new thread or we have never had a threadsRequest.
