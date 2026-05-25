@@ -448,9 +448,6 @@ export class TCFDebugSession extends LifetimeDebugSession {
 			// contexts.size === 1
 			//single context hit, find the corresponding threadId
 			const context = contexts.values().next().value;
-			if (!context) {
-				return;
-			}
 
 			void (this.verifyInlinedBreakpoint(context, breakpointTcfId)); //TODO: Should this be await-ed instead of ignored with the void operator?
 
