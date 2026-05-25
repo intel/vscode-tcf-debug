@@ -239,7 +239,7 @@ export abstract class TCFClient extends AbstractTCFClient {
      * @returns a list of buffers with the first 'error' buffer empty.
      */
     private static noError(buffers: Buffer[]): Buffer[] {
-        return [EMPTY_BUFFER, ...buffers];
+        return [EMPTY_BUFFER].concat(buffers);
     }
 
     //see https://download.eclipse.org/tools/tcf/tcf-docs/TCF%20Service%20-%20Run%20Control.html#Events
